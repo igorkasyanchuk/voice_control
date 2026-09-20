@@ -1,0 +1,81 @@
+<!doctype html>
+
+<html lang="en">
+  <head>
+    <title>Lazzzy · A little less clicking</title>
+
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= stylesheet_link_tag "/demo.css" %>
+    <%= javascript_include_tag "/turbo.js", type: "module", nonce: true %>
+    <%= javascript_include_tag "/demo.js", defer: true, nonce: true %>
+  </head>
+
+  <body>
+    <aside>
+      <%= link_to root_path, class: "brand" do %>
+        lazzzy<span>↗</span>
+      <% end %>
+
+      <div class="workspace">
+        <span class="workspace-icon">F</span>
+
+        <div>
+          <%= workspace_settings.workspace_name %><small>Demo workspace</small>
+        </div>
+
+        <span class="workspace-arrow">⌄</span>
+      </div>
+
+      <p class="nav-label">WORKSPACE</p>
+
+      <nav>
+        <% { "overview" => "◫", "users" => "♧", "orders" => "▤", "products" => "◇", "reports" => "◴", "activity" => "⌁", "settings" => "⚙" }.each do |page, icon| %>
+          <%= link_to(page == "overview" ? root_path : page_path(page), class: ("selected" if @page == page)) do %>
+            <span><%= icon %></span><%= page.capitalize %>
+          <% end %>
+        <% end %>
+      </nav>
+
+      <div class="sidebar-note">
+        <span>⌘</span>
+        <p>Your next action is<br>just a sentence away.</p>
+      </div>
+
+      <div class="account">
+        <span class="avatar">JD</span>
+
+        <div>
+          <%= demo_account.name %>
+          <small>Demo administrator</small>
+
+          <small>
+            <span data-demo-plan><%= demo_account.plan_label %></span> plan
+          </small>
+        </div>
+
+        <span class="account-dot"></span>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>Workspace <span>/</span> <%= @page.capitalize %></div>
+
+        <span class="demo-badge">
+          <i></i>
+          Interactive demo
+        </span>
+      </header>
+
+      <% flash.each do |type, message| %>
+        <div class="flash <%= type %>" role="status"><%= message %></div>
+      <% end %>
+
+      <%= yield %>
+    </main>
+
+    <div id="demo-toast" role="status" hidden></div>
+    <%= lazzzy_widget %>
+  </body>
+</html>

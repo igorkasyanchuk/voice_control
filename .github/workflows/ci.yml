@@ -1,0 +1,22 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rails: ['~> 8.0.0', '~> 8.1.0']
+    env:
+      RAILS_VERSION: ${{ matrix.rails }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '4.0'
+          bundler-cache: true
+          cache-version: ${{ matrix.rails }}
+      - run: bundle exec rake test
+      - run: bundle exec rubocop
+      - run: gem build lazzzy.gemspec

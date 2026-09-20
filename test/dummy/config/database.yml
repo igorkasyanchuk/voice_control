@@ -1,0 +1,12 @@
+default: &default
+  adapter: sqlite3
+  pool: 5
+  timeout: 5000
+
+development:
+  <<: *default
+  url: <%= "sqlite3:#{Rails.root.join('storage/development.sqlite3')}" %>
+
+test:
+  <<: *default
+  url: <%= "sqlite3:#{Rails.root.join('storage/test.sqlite3')}" %>

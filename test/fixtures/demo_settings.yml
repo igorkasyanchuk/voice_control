@@ -1,0 +1,7 @@
+workspace:
+  id: 1
+  workspace_name: Fern & Co.
+  workspace_note: ""
+  notifications: true
+  discount_percent: 0
+  tokens_granted: 0

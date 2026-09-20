@@ -1,0 +1,28 @@
+admin:
+  id: 1
+  name: Jamie Davis
+  email: jamie@example.com
+  plan: free
+  token_balance: 0
+  status: active
+alex:
+  id: 42
+  name: Alex Morgan
+  email: alex@example.com
+  plan: premium
+  token_balance: 1200
+  status: active
+sam:
+  id: 73
+  name: Sam Rivera
+  email: sam@example.com
+  plan: free
+  token_balance: 50
+  status: active
+taylor:
+  id: 108
+  name: Taylor Kim
+  email: taylor@example.com
+  plan: premium_plus
+  token_balance: 5000
+  status: active

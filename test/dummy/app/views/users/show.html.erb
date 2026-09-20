@@ -1,0 +1,39 @@
+<div class="page">
+  <div class="page-heading">
+    <h1><%= @user.name %></h1>
+    <span>User #<%= @user.id %></span>
+  </div>
+
+  <section class="table-card">
+    <dl class="record-details">
+      <dt>Email</dt>
+
+      <dd><%= @user.email %></dd>
+
+      <dt>Plan</dt><%= tag.dd @user.plan_label, data: { demo_plan: (true if @user.id == DemoUser::ACCOUNT_ID) } %>
+
+      <dt>Balance</dt>
+
+      <dd
+        id="demo-token-balance-<%= @user.id %>"
+        data-token-balance="<%= @user.token_balance %>"
+      >
+        <%= number_with_delimiter(@user.token_balance) %> tokens
+      </dd>
+
+      <dt>Status</dt>
+
+      <dd><%= @user.status.capitalize %></dd>
+    </dl>
+
+    <div class="row-actions">
+      <%= link_to "Edit user", edit_user_path(@user), class: "action-button" %>
+
+      <% unless @user.id == DemoUser::ACCOUNT_ID %>
+        <%= button_to "Delete user", user_path(@user), method: :delete, class: "delete-button" %>
+      <% end %>
+
+      <%= link_to "Back to users", users_path %>
+    </div>
+  </section>
+</div>

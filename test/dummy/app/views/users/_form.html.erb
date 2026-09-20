@@ -1,0 +1,24 @@
+<%= form_with model: user, scope: :user, url: user.persisted? ? user_path(user) : users_path, class: "settings-form" do |form| %>
+  <%= render "shared/errors", record: user %>
+  <%= form.label :name %>
+  <%= form.text_field :name, required: true, maxlength: 100 %>
+  <%= form.label :email %>
+  <%= form.email_field :email, required: true, maxlength: 254 %>
+  <%= form.label :plan %>
+  <%= form.select :plan, DemoUser::PLANS %>
+  <%= form.label :token_balance, "Token balance" %>
+  <%= form.number_field :token_balance, min: 0, max: 1_000_000_000, step: 1, required: true %>
+
+  <fieldset class="status-options">
+    <legend>Status</legend>
+
+    <% %w[active inactive].each do |status| %>
+      <label class="checkbox-label">
+        <%= form.radio_button :status, status %> <%= status.capitalize %>
+      </label>
+    <% end %>
+  </fieldset>
+
+  <%= form.button user.persisted? ? "Save user" : "Create user", type: "submit" %>
+  <%= link_to "Back to users", users_path %>
+<% end %>

@@ -1,0 +1,64 @@
+<section class="table-card">
+  <div class="section-heading">
+    <h2>Your people</h2>
+    <%= link_to "New user", new_user_path, class: "action-button" %>
+  </div>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>PERSON</th>
+          <th>USER ID</th>
+          <th>PLAN</th>
+          <th>BALANCE</th>
+          <th>STATUS</th>
+          <th>ACTIONS</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% users.each do |user| %>
+          <tr>
+            <td>
+              <%= link_to user.name, user_path(user) %><small class="user-email"><%= user.email %></small>
+            </td>
+
+            <td>#<%= user.id %></td>
+            <%= tag.td user.plan_label, data: { demo_plan: (true if user.id == DemoUser::ACCOUNT_ID) } %>
+
+            <td
+              id="demo-token-balance-<%= user.id %>"
+              data-token-balance="<%= user.token_balance %>"
+            >
+              <%= number_with_delimiter(user.token_balance) %> tokens
+            </td>
+
+            <td>
+              <span class="status-pill"><%= user.status.capitalize %></span>
+            </td>
+
+            <td>
+              <div class="row-actions">
+                <%= link_to "Edit", edit_user_path(user), aria: { label: "Edit #{user.name}" } %>
+
+                <% unless user.id == DemoUser::ACCOUNT_ID %>
+                  <%= button_to "Delete", user_path(user), method: :delete, class: "delete-button", aria: { label: "Delete #{user.name}" } %>
+                <% end %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="pagination">
+    <span>
+      <%= demo_user_count %> users · Page <%= page_number %> of <%= last_page %>
+    </span>
+
+    <%= link_to "Previous", users_path(number: page_number - 1) if page_number > 1 %>
+    <%= link_to "Next", users_path(number: page_number + 1) if page_number < last_page %>
+  </div>
+</section>

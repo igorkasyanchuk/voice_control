@@ -1,0 +1,197 @@
+<% jev_enabled = Lazzzy.configuration.interpreter.is_a?(Lazzzy::Jev) %>
+
+<div class="page">
+  <div class="eyebrow">LESS CLICKING. MORE DOING.</div>
+
+  <div class="page-heading">
+    <div>
+      <h1>
+        <%= @page == "overview" ? "Make yourself comfortable." : @page.capitalize %>
+      </h1>
+
+      <p>Your workspace, at the speed of a sentence.</p>
+    </div>
+
+    <span class="date">FERN &amp; CO. / DEMO</span>
+  </div>
+
+  <% if @page == "overview" %>
+    <section class="intro">
+      <div>
+        <span class="pill">MEET YOUR NEW SHORTCUT</span>
+        <h2>You say it.<br>Your app does it.</h2>
+
+        <p>
+          Jump between pages. Give someone tokens. Change a plan.
+          <br>
+          Open the mic in the corner, or type your next move.
+        </p>
+
+        <button
+          type="button"
+          data-open-lazzzy
+          aria-haspopup="dialog"
+          aria-controls="try-lazzzy-dialog"
+        >
+          Try lazzzy <span>↗</span>
+        </button>
+
+        <small>
+          <%= jev_enabled ? "Powered by Jev. Try it in your own words." : "No API key needed. Just try it." %>
+        </small>
+      </div>
+
+      <div class="conversation-art" aria-hidden="true">
+        <span class="art-label">A LITTLE LESS WORK</span>
+
+        <div class="bubble user-bubble">
+          “Give user 42 100 tokens” <span>↗</span>
+        </div>
+
+        <div class="bubble response-bubble">
+          <span class="check">✓</span> Done. On to the next thing.
+        </div>
+
+        <div class="art-line"></div>
+        <span class="art-caption">Your commands. Your permissions.</span>
+      </div>
+    </section>
+    <dialog
+      id="try-lazzzy-dialog"
+      class="demo-dialog"
+      aria-labelledby="try-lazzzy-title"
+    >
+      <span class="pill">A LITTLE DEMO</span>
+      <h2 id="try-lazzzy-title">Hello from Fern &amp; Co.</h2>
+
+      <p>
+        You opened this window with a button. Lazzzy can click the same button
+        when you ask.
+      </p>
+
+      <dl>
+        <div>
+          <dt>Workspace</dt>
+          <dd><%= workspace_settings.workspace_name %></dd>
+        </div>
+
+        <div>
+          <dt>Members</dt>
+          <dd><%= demo_user_count %></dd>
+        </div>
+
+        <div>
+          <dt>Status</dt>
+          <dd>Ready to explore</dd>
+        </div>
+      </dl>
+
+      <form method="dialog">
+        <button type="submit" autofocus>Got it <span>↗</span></button>
+      </form>
+    </dialog>
+  <% end %>
+
+  <% if @page == "overview" %>
+    <div class="metrics">
+      <article>
+        <span>People in your workspace</span><strong><%= number_with_delimiter(demo_user_count) %></strong>
+        <p>A little community, growing.</p>
+      </article>
+
+      <article>
+        <span>Tokens granted</span><strong id="demo-token-count"><%= number_with_delimiter(workspace_settings.tokens_granted) %>        </strong>
+
+        <p>Try “give user 42 100 tokens”.</p>
+      </article>
+
+      <article>
+        <span>Your plan</span><strong id="demo-plan" data-demo-plan><%= demo_account.plan_label %>        </strong>
+
+        <p>Try “change my plan to premium”.</p>
+      </article>
+    </div>
+  <% end %>
+
+  <% if @page == "users" %>
+    <%= render "users/table", users: @users, page_number: @page_number, last_page: @last_page %>
+  <% elsif @page == "settings" %>
+    <%= render "settings/form" %>
+  <% elsif @page == "orders" || @page == "products" %>
+    <section class="table-card">
+      <div class="section-heading">
+        <h2><%= @page.capitalize %> at a glance</h2>
+        <span>Sample data</span>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>ITEM</th>
+            <th>REFERENCE</th>
+            <th>VALUE</th>
+            <th>STATUS</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <% [["Starter collection", "FRN-1042", "$29.00"], ["Studio essentials", "FRN-1043", "$89.00"], ["The complete set", "FRN-1044", "$149.00"]].each do |name, ref, value| %>
+            <tr>
+              <td><%= name %></td>
+              <td><%= ref %></td>
+              <td><%= value %></td>
+              <td><span class="status-pill">Available</span></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </section>
+    <%= render "demo/schedule_preview" if @page == "orders" %>
+  <% else %>
+    <section class="try-section">
+      <div class="section-heading">
+        <h2>A few things to try</h2>
+        <span>Speak naturally. Or type.</span>
+      </div>
+
+      <div class="examples">
+        <button data-command="open users">
+          <span class="example-icon">↗</span><strong>“Open users”</strong><small>Find your way around</small>
+        </button>
+
+        <button data-command="give user 42 100 tokens">
+          <span class="example-icon">＋</span><strong>“Give user 42 100 tokens”</strong><small>Run a custom action</small>
+        </button>
+
+        <button data-command="change my plan">
+          <span class="example-icon">◇</span><strong>“Change my plan”</strong><small>Choose your account plan</small>
+        </button>
+      </div>
+    </section>
+  <% end %>
+
+  <section class="demo-details">
+    <div>
+      <span class="small-dot"></span><strong><%= jev_enabled ? "Jev interpreter" : "Local demo interpreter" %>      </strong>
+
+      <p>
+        <% if jev_enabled %>
+          Try commands in your own words. Jev matches them to this demo's
+          actions.
+        <% else %>
+          Try the example phrases, or restart with a Jev API key to use your own
+          words.
+        <% end %>
+      </p>
+    </div>
+
+    <div>
+      <span class="code-label">BUILT FOR RAILS</span>
+      <p>Ruby vocabulary · Shadow DOM · Database-free gem</p>
+    </div>
+  </section>
+
+  <footer class="page-footer">
+    <span>lazzzy — a little less clicking.</span><span>Demo users and settings are saved in a local database.</span>
+  </footer>
+</div>

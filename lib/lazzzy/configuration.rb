@@ -1,0 +1,50 @@
+module Lazzzy
+  class Configuration
+    attr_accessor :api_key, :model, :parent_controller, :authorize, :context,
+      :on_error, :interpreter, :keyboard_shortcut, :idle_timeout, :confidence_threshold,
+      :execution_store, :identity, :browser_actions, :debug, :push_to_talk_shortcut
+    attr_reader :commands, :widget_position
+
+    def initialize
+      @model = "jev-latest"
+      @parent_controller = "ApplicationController"
+      @authorize = -> { false }
+      @identity = -> { respond_to?(:current_user, true) ? current_user&.id : nil }
+      @context = ->(client_context) { client_context }
+      @on_error = ->(error, details) { Rails.logger.error("Lazzzy #{error.class} command=#{details[:command]}") }
+      @keyboard_shortcut = "mod+shift+u"
+      @idle_timeout = 120_000
+      @confidence_threshold = 0.35
+      development_store = ActiveSupport::Cache::MemoryStore.new if Rails.env.development?
+      @execution_store = -> { Rails.cache.is_a?(ActiveSupport::Cache::NullStore) && development_store ? development_store : Rails.cache }
+      @commands = {}
+      @browser_actions = false
+      @debug = false
+      @widget_position = :bottom_right
+      @push_to_talk_shortcut = "mod+shift+space"
+    end
+
+    def widget_position=(value)
+      raise ArgumentError, "Widget position must be bottom_right or bottom_left" unless %w[bottom_right bottom_left].include?(value.to_s)
+
+      @widget_position = value.to_sym
+    end
+
+    def group(name, &block)
+      previous = @group
+      @group = name.to_s
+      block.call(self)
+    ensure
+      @group = previous
+    end
+
+    def command(key, **options, &block)
+      key = key.to_s
+      raise ArgumentError, "Duplicate command: #{key}" if commands.key?(key)
+      raise ArgumentError, "Invalid command key" unless key.match?(/\A[a-z][a-z0-9_]*\z/) && key != "none"
+      raise ArgumentError, "Reserved browser command key" if key.start_with?(BrowserActions::PREFIX)
+
+      commands[key] = Command.new(key, group: @group || "Commands", **options, &block)
+    end
+  end
+end

@@ -1,0 +1,13 @@
+/.bundle/
+/Gemfile.lock
+/tmp/
+/test/dummy/log/
+/test/dummy/tmp/
+/test/dummy/storage/
+/*.gem
+/.env
+/.env.*
+/.DS_Store
+/IMPLEMENTATION_PLAN.md
+/VALIDATION.md
+/RELEASE_REVIEW.md
