@@ -2,6 +2,8 @@
 
 ## 0.1.0 (unreleased)
 
+- Constrain JSON to 2.x for Rails 8.0/8.1 compatibility in fresh installs and CI.
+
 - Add a small launcher option, explain initializer settings, and expand the README with command examples.
 
 - Discover only controls with readable text or labels, and show command descriptions alongside Jev probability IDs.

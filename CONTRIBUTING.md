@@ -23,7 +23,7 @@ Open [the regression fixture](http://127.0.0.1:4205/test/browser/index.html). Th
 
 JavaScript lint configuration is provided in `eslint.config.mjs`; use ESLint 9 or 10 and Prettier 3 when editing assets. Test Turbo navigation in the dummy app and custom router behavior in your integration. Run against real Redis when changing replay protection; separate processes must claim a ticket only once.
 
-CI tests Rails 8.0 and 8.1. To select a version locally, use a separate checkout without its ignored lockfile and run `RAILS_VERSION='~> 8.0.0' bundle install`, then `RAILS_VERSION='~> 8.0.0' bundle exec rake test`. Rails 8.0 also needs JSON below 3; the development Gemfile applies that constraint for this matrix entry.
+CI tests Rails 8.0 and 8.1. To select a version locally, use a separate checkout without its ignored lockfile and run `RAILS_VERSION='~> 8.0.0' bundle install`, then `RAILS_VERSION='~> 8.0.0' bundle exec rake test`. The gemspec constrains JSON below 3 for both supported Rails versions. Use fresh dependency resolution when changing dependencies; an existing local lockfile can hide CI failures.
 
 ## Packaging
 

@@ -6,6 +6,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         rails: ['~> 8.0.0', '~> 8.1.0']
     env:

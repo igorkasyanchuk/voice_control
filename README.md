@@ -23,7 +23,7 @@ Say **“show people.”** Your app opens its users page.
 
 **No runtime database, migrations, Node build, or CSS framework.** Rails 8.x, Ruby 4.0+, MIT. A short-lived execution cache is required; production uses a shared atomic cache.
 
-Rails 8.0 applications must keep `gem "json", "< 3"` in their Gemfile: its JSON encoder uses an option removed in JSON 3. Rails 8.1 does not need this constraint.
+The gem requires JSON 2.x because the supported Rails 8.0/8.1 versions use JSON APIs changed in JSON 3. Bundler applies this constraint automatically.
 
 **Status:** unreleased. Installation currently uses this source checkout or a locally built gem. Commands execute immediately once their arguments are complete; no confirmation dialog is added. Start with navigation and actions you can safely expose to the authorized user.
 

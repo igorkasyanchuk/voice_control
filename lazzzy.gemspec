@@ -16,5 +16,6 @@ Gem::Specification.new do |spec|
   spec.files = Dir["{app,assets,config,lib,examples,docs}/**/*", "README.md", "LICENSE", "CHANGELOG.md", "CONTRIBUTING.md", "SECURITY.md"].select { |path| File.file?(path) }
   spec.add_dependency "railties", ">= 8.0", "< 9"
   spec.add_dependency "actionpack", ">= 8.0", "< 9"
+  spec.add_dependency "json", ">= 2.3", "< 3"
   spec.add_dependency "net-http", ">= 0.3.2", "< 1"
 end
