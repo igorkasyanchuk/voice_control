@@ -29,6 +29,7 @@ CI tests Rails 8.0 and 8.1. To select a version locally, use a separate checkout
 
 ```sh
 gem build lazzzy.gemspec
+gem install --local lazzzy-0.1.0.gem
 gem contents lazzzy --show-install-dir # After installing your local build
 ```
 

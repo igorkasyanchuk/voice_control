@@ -60,6 +60,18 @@ input:focus-visible {
   width: 24px;
   height: 24px;
 }
+:host([data-launcher-size="small"]) .launcher {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+:host([data-launcher-size="small"]) .launcher svg {
+  width: 20px;
+  height: 20px;
+}
+:host([data-launcher-size="small"]) .panel {
+  bottom: 58px;
+}
 .panel {
   position: absolute;
   bottom: 70px;

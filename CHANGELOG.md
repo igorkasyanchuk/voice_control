@@ -2,6 +2,8 @@
 
 ## 0.1.0 (unreleased)
 
+- Add a small launcher option, explain initializer settings, and expand the README with command examples.
+
 - Discover only controls with readable text or labels, and show command descriptions alongside Jev probability IDs.
 
 - Prevent canceled interpretations and incomplete speech fragments from executing; restore listeners after widget reinsertion.

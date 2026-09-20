@@ -3,7 +3,7 @@ module Lazzzy
     attr_accessor :api_key, :model, :parent_controller, :authorize, :context,
       :on_error, :interpreter, :keyboard_shortcut, :idle_timeout, :confidence_threshold,
       :execution_store, :identity, :browser_actions, :debug, :push_to_talk_shortcut
-    attr_reader :commands, :widget_position
+    attr_reader :commands, :widget_position, :launcher_size
 
     def initialize
       @model = "jev-latest"
@@ -21,6 +21,7 @@ module Lazzzy
       @browser_actions = false
       @debug = false
       @widget_position = :bottom_right
+      @launcher_size = :normal
       @push_to_talk_shortcut = "mod+shift+space"
     end
 
@@ -28,6 +29,12 @@ module Lazzzy
       raise ArgumentError, "Widget position must be bottom_right or bottom_left" unless %w[bottom_right bottom_left].include?(value.to_s)
 
       @widget_position = value.to_sym
+    end
+
+    def launcher_size=(value)
+      raise ArgumentError, "Launcher size must be normal or small" unless %w[normal small].include?(value.to_s)
+
+      @launcher_size = value.to_sym
     end
 
     def group(name, &block)

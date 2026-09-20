@@ -22,6 +22,7 @@ Set options in `config/initializers/lazzzy.rb` inside `Lazzzy.configure`. Restar
 | `push_to_talk_shortcut` | `"mod+shift+space"` | Hold/release speech; `nil` disables it. |
 | `idle_timeout` | `120_000` | Milliseconds before the open widget closes for inactivity; use a positive number. |
 | `widget_position` | `:bottom_right` | `:bottom_right` or `:bottom_left`. |
+| `launcher_size` | `:normal` | `:small` uses a 44px button/20px icon; `:normal` uses 56px/24px. Panel width is unchanged. |
 
 A custom interpreter chooses from the supplied authorized catalog and returns symbol keys:
 

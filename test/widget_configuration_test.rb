@@ -1,6 +1,19 @@
 require_relative "test_helper"
 
 class WidgetConfigurationTest < LazzzyTest
+  def test_launcher_sizes_are_validated_and_rendered
+    get "/"
+    assert_select 'lazzzy-widget[data-launcher-size="normal"]'
+    @config.launcher_size = "small"
+    assert_equal :small, @config.launcher_size
+    get "/"
+    assert_select 'lazzzy-widget[data-launcher-size="small"]'
+    [nil, :large, "44px"].each do |size|
+      assert_raises(ArgumentError) { @config.launcher_size = size }
+    end
+    assert_equal :small, @config.launcher_size
+  end
+
   def test_default_and_left_positions_and_hold_shortcut_are_rendered
     get "/"
     assert_select 'lazzzy-widget[data-position="bottom_right"][data-push-to-talk-shortcut="mod+shift+space"]'

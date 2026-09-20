@@ -16,6 +16,7 @@ class GeneratorTest < Rails::Generators::TestCase
     run_generator
     assert_file "config/initializers/lazzzy.rb", /config.authorize = -> \{ false \}/
     assert_file "config/initializers/lazzzy.rb", /JEV_API_KEY/
+    assert_file "config/initializers/lazzzy.rb", /config.launcher_size = :normal/
     assert_file "config/routes.rb", /mount Lazzzy::Engine/
   end
 end

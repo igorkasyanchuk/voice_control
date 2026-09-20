@@ -237,6 +237,37 @@
       "Raw provider result was changed",
     );
   });
+  test("Small launcher keeps the panel size and a 44px click target", async () => {
+    await setup();
+    const stylesheet = widget.shadowRoot.querySelector("link");
+    if (!stylesheet.sheet) {
+      await new Promise((resolve, reject) => {
+        stylesheet.addEventListener("load", resolve, { once: true });
+        stylesheet.addEventListener("error", reject, { once: true });
+      });
+    }
+    const launcher = widget.shadowRoot.querySelector(".launcher");
+    const icon = launcher.querySelector("svg");
+    const panelWidth = widget.panel.getBoundingClientRect().width;
+    assert(
+      launcher.getBoundingClientRect().width === 56,
+      "Default launcher changed",
+    );
+    widget.dataset.launcherSize = "small";
+    assert(
+      launcher.getBoundingClientRect().width === 44 &&
+        launcher.getBoundingClientRect().height === 44,
+      "Small click target is incorrect",
+    );
+    assert(
+      icon.getBoundingClientRect().width === 20,
+      "Microphone did not shrink",
+    );
+    assert(
+      widget.panel.getBoundingClientRect().width === panelWidth,
+      "Panel width changed",
+    );
+  });
   let failures = 0;
   for (const { name, run } of tests) {
     const row = document.createElement("li");

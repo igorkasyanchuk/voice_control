@@ -9,7 +9,7 @@ module Lazzzy
         tag.public_send("lazzzy-widget", id: "lazzzy-widget", data: {
           turbo_permanent: true, endpoint: mount, shortcut: Lazzzy.configuration.keyboard_shortcut,
           idle_timeout: Lazzzy.configuration.idle_timeout, version: version, browser_actions: Lazzzy.configuration.browser_actions,
-          debug: Lazzzy.configuration.debug == true,
+          debug: Lazzzy.configuration.debug == true, launcher_size: Lazzzy.configuration.launcher_size,
           position: Lazzzy.configuration.widget_position, push_to_talk_shortcut: Lazzzy.configuration.push_to_talk_shortcut,
         }),
         javascript_include_tag("#{mount}/widget.js?v=#{version}", defer: true, nonce: true),
