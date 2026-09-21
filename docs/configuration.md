@@ -2,7 +2,7 @@
 
 # Configuration reference
 
-Set options in `config/initializers/lazzzy.rb` inside `Lazzzy.configure`. Restart Rails after editing the vocabulary or initializer. The DSL is process configuration, not automatically reloaded application code.
+Set options in `config/initializers/voice_control.rb` inside `VoiceControl.configure`. Restart Rails after editing the vocabulary or initializer. The DSL is process configuration, not automatically reloaded application code.
 
 | Option | Default | Purpose |
 | --- | --- | --- |
@@ -12,7 +12,7 @@ Set options in `config/initializers/lazzzy.rb` inside `Lazzzy.configure`. Restar
 | `authorize` | `-> { false }` | Overall widget and endpoint access, in controller context. |
 | `identity` | `current_user&.id` when available | Binds tickets to the authenticated identity, in addition to the session. Override for other auth systems. |
 | `context` | Pass supplied context through | Sanitize/allowlist context before interpretation. Receives a hash with string keys. |
-| `browser_actions` | `false` | Discover supported page controls and enable dynamic actions. |
+| `browser_actions` | `false` | Discover supported page controls and enable dynamic actions. Pages can opt out with the [meta tag or DOM exclusions](browser-actions.md#exclude-pages-or-controls). |
 | `debug` | `false` | Show latest diagnostics, including the validated Jev action answer. |
 | `confidence_threshold` | `0.35` | Lower-confidence matches ask which candidate to use. Calibrate for your vocabulary. |
 | `execution_store` | `Rails.cache`, development-only NullStore fallback | Zero-argument callable returning an atomic cache. [Production requirements](deployment.md). |
@@ -21,6 +21,7 @@ Set options in `config/initializers/lazzzy.rb` inside `Lazzzy.configure`. Restar
 | `keyboard_shortcut` | `"mod+shift+u"` | Open/close; `nil` disables it. `mod` is Cmd on macOS, Ctrl elsewhere. |
 | `push_to_talk_shortcut` | `"mod+shift+space"` | Hold/release speech; `nil` disables it. |
 | `idle_timeout` | `120_000` | Milliseconds before the open widget closes for inactivity; use a positive number. |
+| `request_timeout` | `30_000` | Browser request deadline in milliseconds, including response parsing; integer from 1,000 to 300,000. No automatic retries. |
 | `widget_position` | `:bottom_right` | `:bottom_right` or `:bottom_left`. |
 | `launcher_size` | `:normal` | `:small` uses a 44px button/20px icon; `:normal` uses 56px/24px. Panel width is unchanged. |
 

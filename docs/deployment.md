@@ -40,7 +40,7 @@ config.cache_store = :redis_cache_store, {
 ```
 
 ```ruby
-# Inside Lazzzy.configure in your initializer:
+# Inside VoiceControl.configure in your initializer:
 config.execution_store = -> { Rails.cache }
 config.debug = false
 config.authorize = -> { current_user&.admin? }
@@ -54,13 +54,13 @@ Use a cache shared by every web process and avoid evicting replay keys before th
 
 Start with a small command vocabulary. Explicit record/tenant policies belong in each mutation's `authorize` callback; a UI label, model confidence, supplied URL, or hidden button is never an authorization boundary. Exact browser clicks bypass model matching, but still use the same ticket/access checks. The default confidence threshold is 0.35; evaluate it against your own vocabulary before rollout. Increasing it (for example, `config.confidence_threshold = 0.75`) asks for disambiguation more often. Neither value guarantees that a model inferred the right intent.
 
-The gem does not impose per-user/provider rate limits. Apply your application's existing Rails rate limiter or Rack middleware to `/lazzzy/interpret` and `/lazzzy/execute`, keyed to your authenticated identity. Account for these requests in provider cost and latency monitoring. `on_error` handles unexpected failures; expected authorization/validation rejections are HTTP responses.
+The gem does not impose per-user/provider rate limits. Apply your application's existing Rails rate limiter or Rack middleware to `/voice_control/interpret` and `/voice_control/execute`, keyed to your authenticated identity. Account for these requests in provider cost and latency monitoring. `on_error` handles unexpected failures; expected authorization/validation rejections are HTTP responses.
 
 ### Privacy and logs
 
-The default URL context includes its query and fragment. Filter context before it reaches Jev when a URL can contain reset tokens, emails, or other private data. `data-lazzzy-ignore` prevents a control/subtree from being discovered; label attributes and nearby row identities can otherwise contain application data. Debug is for trusted users and includes the current transcript. Never share copied diagnostics without checking their contents.
+The default URL context includes its query and fragment. Filter context before it reaches Jev when a URL can contain reset tokens, emails, or other private data. `data-voice-control-ignore` prevents a control/subtree from being discovered; label attributes and nearby row identities can otherwise contain application data. Debug is for trusted users and includes the current transcript. Never share copied diagnostics without checking their contents.
 
-Rails request logs may include payloads even though lazzzy has no history database. Filter them in your app:
+Rails request logs may include payloads even though voice_control has no history database. Filter them in your app:
 
 ```ruby
 # config/initializers/filter_parameter_logging.rb
@@ -90,7 +90,8 @@ Closing or canceling during interpretation prevents a later response from trigge
 | Session changed / HTTP 422 | Current CSRF meta tag, cookies, inherited controller callbacks, and expired tickets. Reload after signing in/out. |
 | HTTP 403 | Overall access, command visibility, record policy, and changed user identity. |
 | Commands refuse to execute with caching disabled | Development uses a local fallback; elsewhere configure a shared atomic execution store. |
-| Too many page controls | Dynamic discovery has a 200-control bound. Exclude irrelevant sections with `data-lazzzy-ignore`, or turn it off and use your Ruby vocabulary. |
+| Too many page controls | Dynamic discovery has a 200-control bound. Exclude irrelevant sections with `data-voice-control-ignore`, or use the page-wide `voice-control-browser-actions` meta tag. |
+| A scoped command is missing | Check `pages:` against `location.pathname`, including case/trailing slash. Scope uses the original client path even when `config.context` filters URL data. |
 | This command is too large | Shorten the transcript/context or narrow the discovered controls. Signed state is capped at 32KB. |
 | Control/form changed | Restart the command after navigation, DOM replacement, relabeling, or form destination changes. |
 | Wrong model match | Inspect Jev JSON, make descriptions/aliases distinct, reduce overlapping commands, or raise the threshold. Use exact click labels for page controls. |

@@ -1,10 +1,10 @@
 require_relative "test_helper"
 
-class BrowserActionsTest < LazzzyTest
+class BrowserActionsTest < VoiceControlTest
   def test_fill_asks_for_a_value_then_returns_a_browser_action
     @config.command :workspace_name, description: "Fill workspace name" do
       argument :value, :string
-      execute { |args, _context| Lazzzy::Result.fill("#workspace-name", args[:value]) }
+      execute { |args, _context| VoiceControl::Result.fill("#workspace-name", args[:value]) }
     end
 
     result = submit(command: "workspace_name")
@@ -19,7 +19,7 @@ class BrowserActionsTest < LazzzyTest
   def test_click_and_focus_use_the_authorized_execution_flow
     [:click, :focus].each do |action|
       @config.command action, description: action.to_s do
-        execute { |_args, _context| Lazzzy::Result.public_send(action, "#target") }
+        execute { |_args, _context| VoiceControl::Result.public_send(action, "#target") }
       end
       result = submit(command: action.to_s)
       assert_equal({ "kind" => "browser", "action" => action.to_s, "selector" => "#target" }, execute(result["ticket"]))
@@ -41,11 +41,11 @@ class BrowserActionsTest < LazzzyTest
   def test_browser_results_reject_invalid_selectors_and_oversized_values
     [nil, "", "  ", "a" * 501].each do |selector|
       [:click, :focus].each do |action|
-        assert_raises(Lazzzy::InvalidInput) { Lazzzy::Result.public_send(action, selector) }
+        assert_raises(VoiceControl::InvalidInput) { VoiceControl::Result.public_send(action, selector) }
       end
-      assert_raises(Lazzzy::InvalidInput) { Lazzzy::Result.fill(selector, "test") }
+      assert_raises(VoiceControl::InvalidInput) { VoiceControl::Result.fill(selector, "test") }
     end
-    assert_raises(Lazzzy::InvalidInput) { Lazzzy::Result.fill("#name", "a" * 2001) }
-    assert_equal "", Lazzzy::Result.fill("#name", "")[:value]
+    assert_raises(VoiceControl::InvalidInput) { VoiceControl::Result.fill("#name", "a" * 2001) }
+    assert_equal "", VoiceControl::Result.fill("#name", "")[:value]
   end
 end

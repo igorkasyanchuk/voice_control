@@ -1,12 +1,12 @@
 require "net/http"
 require "json"
 
-module Lazzzy
+module VoiceControl
   class Jev
     ENDPOINT = URI("https://api.typesafe.ai/v1/systemone")
 
     def call(transcript:, context:, commands:)
-      config = Lazzzy.configuration
+      config = VoiceControl.configuration
       key = config.api_key.respond_to?(:call) ? config.api_key.call : config.api_key
       raise ProviderError, "Jev API key is missing" if key.to_s.empty?
 

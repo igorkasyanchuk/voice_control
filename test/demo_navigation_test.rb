@@ -10,12 +10,12 @@ class DemoNavigationTest < ActionDispatch::IntegrationTest
       [page, page.singularize].each do |name|
         ["open", "go to", "show"].each do |verb|
           transcript = "#{verb} #{name}"
-          post "/lazzzy/interpret", params: { transcript: transcript, context: {} }, as: :json, headers: headers
+          post "/voice_control/interpret", params: { transcript: transcript, context: {} }, as: :json, headers: headers
           assert_response :success
           result = response.parsed_body
           assert_equal "execute", result["kind"], transcript
 
-          post "/lazzzy/execute", params: { ticket: result["ticket"] }, as: :json, headers: headers
+          post "/voice_control/execute", params: { ticket: result["ticket"] }, as: :json, headers: headers
           assert_response :success
           assert_equal "/#{page}", response.parsed_body["url"], transcript
         end

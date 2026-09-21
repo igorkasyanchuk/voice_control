@@ -1,7 +1,7 @@
 export default [
   {
-    files: ["**/*.js"],
-    ignores: ["tmp/**"],
+    files: ["**/*.js", "**/*.mjs"],
+    ignores: ["tmp/**", "coverage/**"],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
@@ -20,6 +20,11 @@ export default [
           "AbortController",
           "setTimeout",
           "clearTimeout",
+          "Event",
+          "KeyboardEvent",
+          "DOMException",
+          "Storage",
+          "performance",
         ].map((name) => [name, "readonly"]),
       ),
     },

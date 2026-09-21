@@ -1,7 +1,7 @@
-module Lazzzy
+module VoiceControl
   class BrowserActions
     MAX_TARGETS = 200
-    PREFIX = "lazzzy_browser_".freeze
+    PREFIX = "voice_control_browser_".freeze
     SCROLL_DIRECTIONS = %w[up down top bottom].freeze
     HISTORY_DIRECTIONS = %w[back forward].freeze
     attr_reader :commands

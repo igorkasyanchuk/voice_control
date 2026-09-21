@@ -2,6 +2,22 @@
 
 ## 0.1.0 (unreleased)
 
+- Rename the gem and repository to `voice_control`, with `VoiceControl` Ruby/JavaScript APIs, `voice_control:install`, and the `voice-control-widget` component.
+- Add `pages:` command scopes for exact paths and regexes, with navigation-aware help and a custom-router `VoiceControl.refresh()` hook.
+- Add a page-wide dynamic-action opt-out meta tag; enforce ignored forms for externally associated controls.
+- Reject delayed command execution after navigation and links whose navigation behavior changed while pending.
+- Document notifications without reload and add a scoped workspace-summary demo command.
+- Bound widget requests with configurable `request_timeout`; report uncertain execution without retrying actions.
+- Add optional `notify:` completion notices to result helpers, preserved briefly across navigation and reloads.
+- Restore continuous listening after command-triggered reloads and browser back/forward cache restoration.
+- Run real Turbo navigation, reload, timeout, and widget regressions in Chromium, Firefox, and WebKit CI.
+- Add Ruby and JavaScript coverage reports, behavioral tests, and CI coverage gates above 95%.
+- Keep both “Logout” and “Log out” out of suggested commands.
+
+- Add `VoiceControl::Result.reload` to refresh the current page after successful commands.
+
+- Deduplicate equivalent links in browser actions, help, and command choices.
+
 - Constrain JSON to 2.x for Rails 8.0/8.1 compatibility in fresh installs and CI.
 
 - Add a small launcher option, explain initializer settings, and expand the README with command examples.

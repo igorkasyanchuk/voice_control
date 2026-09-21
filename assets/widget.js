@@ -1,18 +1,19 @@
 (() => {
-  if (customElements.get("lazzzy-widget")) return;
+  if (customElements.get("voice-control-widget")) return;
 
-  class LazzzyWidget extends HTMLElement {
+  class VoiceControlWidget extends HTMLElement {
     connectedCallback() {
       if (this.initialized) return;
       this.initialized = true;
       if (!this.shadowRoot) this.attachShadow({ mode: "open" });
       this.shadowRoot.innerHTML = `
         <link rel="stylesheet" href="${this.dataset.endpoint}/widget.css?v=${encodeURIComponent(this.dataset.version || "0.1.0")}">
-        <button class="launcher" type="button" aria-label="Open Lazzzy" aria-expanded="false">
+        <button class="launcher" type="button" aria-label="Open Voice Control" aria-expanded="false">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="9" y="2" width="6" height="13" rx="3" stroke="currentColor" stroke-width="1.8"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </button>
-        <section class="panel" role="dialog" aria-label="Lazzzy commands" hidden>
-          <header><strong>lazzzy<span>↗</span></strong><div class="controls"><button class="help-toggle" type="button" aria-label="Show all commands">?</button><button class="close" type="button" aria-label="Close and stop listening">×</button></div></header>
+        <div class="notification" role="status" aria-live="polite" hidden></div>
+        <section class="panel" role="dialog" aria-label="Voice Control commands" hidden>
+          <header><strong>voice_control<span>↗</span></strong><div class="controls"><button class="help-toggle" type="button" aria-label="Show all commands">?</button><button class="close" type="button" aria-label="Close and stop listening">×</button></div></header>
           <div class="activity"><span class="indicator"></span><span class="mode">Ready when you are</span><button class="mic" type="button" aria-label="Start microphone">Mic off</button></div>
           <div class="field-tools" hidden><span class="selected-field" aria-live="polite"></span><button class="undo" type="button" hidden>Undo</button></div>
           <p class="status" role="status" aria-live="polite">Say what you want to do, or type below.</p>
@@ -94,6 +95,7 @@
       this.visibilityHandler = () => {
         if (document.hidden) this.blurHandler();
       };
+      this.pageShowHandler = () => this.restoreSession();
       this.pageHandler = () => {
         const resume = !this.panel.hidden
           ? { until: this.idleDeadline, listening: this.listening }
@@ -101,7 +103,12 @@
         this.close(false);
         try {
           if (resume)
-            sessionStorage.setItem("lazzzy:resume", JSON.stringify(resume));
+            sessionStorage.setItem("voice_control:resume", JSON.stringify(resume));
+          if (this.notification?.until > Date.now())
+            sessionStorage.setItem(
+              "voice_control:notification",
+              JSON.stringify(this.notification),
+            );
         } catch {
           /* Storage may be disabled by the browser. */
         }
@@ -111,7 +118,17 @@
       window.addEventListener("blur", this.blurHandler);
       document.addEventListener("visibilitychange", this.visibilityHandler);
       window.addEventListener("pagehide", this.pageHandler);
+      window.addEventListener("pageshow", this.pageShowHandler);
+      this.pageUrl = location.href;
       this.pageActionsHandler = () => {
+        if (this.pageUrl !== location.href) {
+          this.pageUrl = location.href;
+          this.continuation = null;
+          this.choices.replaceChildren();
+          this.catalog = [];
+          this.catalogVersion = (this.catalogVersion || 0) + 1;
+          if (!this.help.hidden) this.loadCatalog();
+        }
         if (
           this.selectedField &&
           (this.selectedField.url !== location.href ||
@@ -186,28 +203,40 @@
             "aria-disabled",
             "aria-label",
             "aria-labelledby",
-            "data-lazzzy-label",
-            "data-lazzzy-ignore",
+            "data-voice-control-label",
+            "data-voice-control-ignore",
+            "content",
           ],
         });
-        document.addEventListener("turbo:load", this.pageActionsHandler);
-        document.addEventListener("turbo:frame-load", this.pageActionsHandler);
-        window.addEventListener("popstate", this.pageActionsHandler);
-        window.addEventListener("hashchange", this.pageActionsHandler);
       }
-      window.Lazzzy = window.Lazzzy || {};
-      window.Lazzzy.open = () => this.open();
-      window.Lazzzy.close = () => this.close();
-      window.Lazzzy.setContext = (context) => {
+      document.addEventListener("turbo:load", this.pageActionsHandler);
+      document.addEventListener("turbo:frame-load", this.pageActionsHandler);
+      window.addEventListener("popstate", this.pageActionsHandler);
+      window.addEventListener("hashchange", this.pageActionsHandler);
+      window.VoiceControl = window.VoiceControl || {};
+      window.VoiceControl.open = () => this.open();
+      window.VoiceControl.close = () => this.close();
+      window.VoiceControl.refresh = () => this.pageActionsHandler();
+      window.VoiceControl.setContext = (context) => {
         this.clientContext = context;
       };
-      window.Lazzzy.configure = (options) => {
+      window.VoiceControl.configure = (options) => {
         this.options = options;
       };
+      this.restoreSession();
+    }
+
+    restoreSession() {
       try {
-        const resume = JSON.parse(sessionStorage.getItem("lazzzy:resume"));
-        sessionStorage.removeItem("lazzzy:resume");
+        const resume = JSON.parse(sessionStorage.getItem("voice_control:resume"));
+        sessionStorage.removeItem("voice_control:resume");
         if (resume?.until > Date.now()) this.open(resume.listening);
+        const notification = JSON.parse(
+          sessionStorage.getItem("voice_control:notification"),
+        );
+        sessionStorage.removeItem("voice_control:notification");
+        if (notification?.until > Date.now())
+          this.showNotification(notification.text, notification.until);
       } catch {
         /* A fresh visit never needs stored state. */
       }
@@ -226,6 +255,8 @@
             this.visibilityHandler,
           );
           window.removeEventListener("pagehide", this.pageHandler);
+          window.removeEventListener("pageshow", this.pageShowHandler);
+          clearTimeout(this.notificationTimer);
           this.pageActionsObserver?.disconnect();
           document.removeEventListener("submit", this.formSubmitHandler, true);
           document.removeEventListener("input", this.fieldEditHandler);
@@ -287,7 +318,7 @@
       this.targetHighlight?.cancel();
       this.panel.hidden = true;
       try {
-        sessionStorage.removeItem("lazzzy:resume");
+        sessionStorage.removeItem("voice_control:resume");
       } catch {
         /* Storage is optional. */
       }
@@ -472,28 +503,82 @@
     }
 
     async api(path, body, signal) {
-      const response = await fetch(`${this.dataset.endpoint}/${path}`, {
-        method: body ? "POST" : "GET",
-        credentials: "same-origin",
-        signal,
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-          "X-CSRF-Token":
-            document.querySelector('meta[name="csrf-token"]')?.content || "",
+      const controller = new AbortController();
+      const abort = () => controller.abort();
+      if (signal?.aborted) abort();
+      signal?.addEventListener("abort", abort, { once: true });
+      let timer;
+      const duration = Number(this.dataset.requestTimeout);
+      const timeout =
+        Number.isInteger(duration) && duration >= 1000 && duration <= 300000
+          ? duration
+          : 30000;
+      try {
+        return await Promise.race([
+          (async () => {
+            const response = await fetch(`${this.dataset.endpoint}/${path}${path === "commands" ? `?path=${encodeURIComponent(location.pathname)}` : ""}`, {
+              method: body ? "POST" : "GET",
+              credentials: "same-origin",
+              signal: controller.signal,
+              headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json",
+                "X-CSRF-Token":
+                  document.querySelector('meta[name="csrf-token"]')?.content ||
+                  "",
+              },
+              ...(body ? { body: JSON.stringify(body) } : {}),
+            });
+            if (
+              !response.headers
+                .get("content-type")
+                ?.includes("application/json")
+            )
+              throw new Error("Your session changed. Reload the page.");
+            const result = await response.json();
+            if (path !== "commands")
+              this.showDebug(result.debug, { http_status: response.status });
+            if (!response.ok)
+              throw new Error(
+                result.message || "The command could not be completed.",
+              );
+            return result;
+          })(),
+          new Promise((_, reject) => {
+            timer = setTimeout(() => {
+              reject(
+                new Error(
+                  path === "execute"
+                    ? "The action may already have completed. Check the page before trying again."
+                    : path === "interpret"
+                      ? "Understanding took too long. Please try again."
+                      : "Loading commands took too long. Please try again.",
+                ),
+              );
+              controller.abort();
+            }, timeout);
+          }),
+        ]);
+      } finally {
+        clearTimeout(timer);
+        signal?.removeEventListener("abort", abort);
+      }
+    }
+
+    showNotification(text, until = Date.now() + 5000) {
+      if (typeof text !== "string" || !text.trim() || text.length > 200) return;
+      clearTimeout(this.notificationTimer);
+      this.notification = { text, until };
+      const notice = this.shadowRoot.querySelector(".notification");
+      notice.textContent = text;
+      notice.hidden = false;
+      this.notificationTimer = setTimeout(
+        () => {
+          notice.hidden = true;
+          this.notification = null;
         },
-        ...(body ? { body: JSON.stringify(body) } : {}),
-      });
-      if (!response.headers.get("content-type")?.includes("application/json"))
-        throw new Error("Your session changed. Reload the page.");
-      const result = await response.json();
-      if (path !== "commands")
-        this.showDebug(result.debug, { http_status: response.status });
-      if (!response.ok)
-        throw new Error(
-          result.message || "The command could not be completed.",
-        );
-      return result;
+        Math.min(5000, Math.max(0, until - Date.now())),
+      );
     }
 
     showDebug(details = {}, extra = {}) {
@@ -563,7 +648,7 @@
         return;
       }
       if (
-        /^(stop listening|close lazzzy|stop lazzzy|stop jev|close jev)[.!]?$/i.test(
+        /^(stop listening|(?:close|stop) voice[ _]control|stop jev|close jev)[.!]?$/i.test(
           text,
         )
       ) {
@@ -602,7 +687,7 @@
       this.status.textContent = "Understanding…";
       this.choices.replaceChildren();
       try {
-        if (this.dataset.browserActions === "true" && !this.continuation)
+        if (this.browserActionsEnabled() && !this.continuation)
           this.browserSnapshot = this.discoverBrowserControls();
         const context =
           typeof this.clientContext === "function"
@@ -619,13 +704,15 @@
               path: location.pathname,
               ...context,
             },
-            ...(!this.continuation && this.dataset.browserActions === "true"
+            ...(!this.continuation && this.browserActionsEnabled()
               ? { browser_page: this.browserSnapshot.page }
               : {}),
           },
           this.request.signal,
         );
         if (generation !== (this.generation || 0) || this.panel.hidden) return;
+        if (pageUrl !== location.href)
+          throw new Error("The page changed. Please start the command again.");
         this.continuation = result.continuation || null;
         if (result.kind === "execute") {
           this.executing = true;
@@ -637,6 +724,8 @@
           );
         }
         if (generation !== (this.generation || 0) || this.panel.hidden) return;
+        if (pageUrl !== location.href)
+          throw new Error("The page changed. Check the action's result before trying again.");
         this.input.value = "";
         this.status.textContent = result.message || "Done.";
         if (result.kind === "ambiguous") {
@@ -645,6 +734,9 @@
               this.submit("", candidate.key),
             ),
           );
+        } else if (result.kind === "reload") {
+          this.undoEdit = null;
+          location.reload();
         } else if (result.kind === "navigate") {
           this.undoEdit = null;
           const url = new URL(result.url, location.origin);
@@ -660,8 +752,6 @@
             new CustomEvent(result.name, { detail: result.detail }),
           );
         } else if (result.kind === "browser") {
-          if (location.href !== pageUrl)
-            throw new Error("The page changed. Please try the command again.");
           this.runBrowserAction(result);
           this.showDebug(
             {},
@@ -670,6 +760,12 @@
         } else if (result.kind === "message") {
           this.undoEdit = null;
         }
+        if (
+          ["message", "navigate", "reload", "event", "browser"].includes(
+            result.kind,
+          )
+        )
+          this.showNotification(result.notification);
       } catch (error) {
         this.showDebug(
           {},
@@ -689,6 +785,12 @@
         this.shadowRoot.querySelector(".send").disabled = false;
         this.resumeRecognition();
       }
+    }
+
+    browserActionsEnabled() {
+      return this.dataset.browserActions === "true" && !Array.from(
+        document.head.querySelectorAll('meta[name="voice-control-browser-actions"]'),
+      ).some((meta) => meta.content.trim().toLowerCase() === "off");
     }
 
     browserActionsFor(target) {
@@ -732,8 +834,9 @@
     browserControlVisible(target) {
       return (
         !target.closest(
-          "lazzzy-widget, [data-lazzzy-ignore], [hidden], [inert], [aria-hidden='true']",
+          "voice-control-widget, [data-voice-control-ignore], [hidden], [inert], [aria-hidden='true']",
         ) &&
+        !target.form?.closest("[data-voice-control-ignore]") &&
         !!target.getClientRects().length &&
         !["hidden", "collapse"].includes(
           window.getComputedStyle(target).visibility,
@@ -758,13 +861,13 @@
         if (
           !node ||
           node.matches("input, textarea, select") ||
-          node.closest("[data-lazzzy-ignore]")
+          node.closest("[data-voice-control-ignore]")
         )
           return "";
         const copy = node.cloneNode(true);
         copy
           .querySelectorAll(
-            "input, textarea, select, script, style, svg, [hidden], [inert], [aria-hidden='true'], [role='img'], [data-lazzzy-ignore], .material-icons, .material-icons-outlined, .material-symbols-outlined, .material-symbols-rounded, .material-symbols-sharp",
+            "input, textarea, select, script, style, svg, [hidden], [inert], [aria-hidden='true'], [role='img'], [data-voice-control-ignore], .material-icons, .material-icons-outlined, .material-symbols-outlined, .material-symbols-rounded, .material-symbols-sharp",
           )
           .forEach((child) => child.remove());
         return copy.textContent;
@@ -783,7 +886,7 @@
         : "";
       let label =
         [
-          target.getAttribute("data-lazzzy-label"),
+          target.getAttribute("data-voice-control-label"),
           target.getAttribute("aria-label"),
           labelledBy,
           labels,
@@ -801,7 +904,7 @@
           .map(readableLabel)
           .find(Boolean) || "";
       if (
-        !target.getAttribute("data-lazzzy-label") &&
+        !target.getAttribute("data-voice-control-label") &&
         !target.getAttribute("aria-label") &&
         !labelledBy.trim() &&
         /^(edit|delete|remove|view|open|details|manage)$/i.test(label)
@@ -811,7 +914,7 @@
           "th[scope='row'], [role='rowheader'], td, [role='cell'], [role='gridcell']",
         );
         const identity =
-          cell?.querySelector("a, strong, [data-lazzzy-row-label]") || cell;
+          cell?.querySelector("a, strong, [data-voice-control-row-label]") || cell;
         if (
           identity &&
           !identity.contains(target) &&
@@ -820,7 +923,7 @@
           const copy = identity.cloneNode(true);
           copy
             .querySelectorAll(
-              "small, button, input, textarea, select, [hidden], [aria-hidden='true'], [data-lazzzy-ignore]",
+              "small, button, input, textarea, select, [hidden], [aria-hidden='true'], [data-voice-control-ignore]",
             )
             .forEach((node) => node.remove());
           const context = readableLabel(labelText(copy));
@@ -872,7 +975,7 @@
         ({ option }) =>
           !option.disabled &&
           !option.closest(
-            "optgroup[disabled], [hidden], [data-lazzzy-ignore]",
+            "optgroup[disabled], [hidden], [data-voice-control-ignore]",
           ) &&
           option.getAttribute("aria-disabled") !== "true",
       );
@@ -979,7 +1082,7 @@
     submitActiveForm(result) {
       const snapshot = this.browserSnapshot;
       if (
-        this.dataset.browserActions !== "true" ||
+        !this.browserActionsEnabled() ||
         !snapshot ||
         result.page_id !== snapshot.page.page_id ||
         snapshot.url !== location.href
@@ -1013,6 +1116,7 @@
       this.browserRefCounter ||= 0;
       const targets = new Map();
       const elements = [];
+      const seenLinks = new Set();
       for (const target of document.querySelectorAll(
         "button, a[href], input, textarea, select, [role='button'], h1, h2, h3, h4, h5, h6",
       )) {
@@ -1028,6 +1132,24 @@
         const ref = this.browserRefs.get(target);
         const metadata = this.browserControlMetadata(target, ref);
         if (!metadata.label) continue;
+        if (
+          target.matches("a[href]:not([role='button'])") &&
+          !["", "#"].includes(target.getAttribute("href").trim())
+        ) {
+          const key = JSON.stringify([
+            metadata.label.toLowerCase(),
+            target.href,
+            ...[
+              "target",
+              "download",
+              "data-method",
+              "data-turbo-method",
+              "data-turbo-frame",
+            ].map((attribute) => target.getAttribute(attribute)),
+          ]);
+          if (seenLinks.has(key)) continue;
+          seenLinks.add(key);
+        }
         if (elements.length === 200)
           throw new Error(
             "This page has too many controls for browser commands.",
@@ -1073,7 +1195,7 @@
       const snapshot = this.browserSnapshot;
       const entry = snapshot?.targets.get(result.target);
       if (
-        this.dataset.browserActions !== "true" ||
+        !this.browserActionsEnabled() ||
         !entry ||
         result.page_id !== snapshot.page.page_id ||
         snapshot.url !== location.href ||
@@ -1114,6 +1236,10 @@
           "formnovalidate",
           "data-turbo-method",
           "data-method",
+          "target",
+          "download",
+          "data-turbo-frame",
+          "data-turbo-action",
         ].map((name) => target.getAttribute(name)),
       ]);
     }
@@ -1126,7 +1252,7 @@
       if (result.action === "history") {
         const snapshot = this.browserSnapshot;
         if (
-          this.dataset.browserActions !== "true" ||
+          !this.browserActionsEnabled() ||
           !snapshot ||
           snapshot.page.page_id !== result.page_id ||
           snapshot.url !== location.href ||
@@ -1276,7 +1402,7 @@
     scrollPage(result) {
       const snapshot = this.browserSnapshot;
       if (
-        this.dataset.browserActions !== "true" ||
+        !this.browserActionsEnabled() ||
         !snapshot ||
         snapshot.page.page_id !== result.page_id ||
         snapshot.url !== location.href ||
@@ -1479,7 +1605,7 @@
       if (!this.shadowRoot || this.panel.hidden) return;
       let snapshot;
       try {
-        if (this.dataset.browserActions === "true")
+        if (this.browserActionsEnabled())
           snapshot = this.discoverBrowserControls();
       } catch (error) {
         this.status.textContent = error.message;
@@ -1530,7 +1656,7 @@
       const clicks = local.filter(
         (target) =>
           snapshot.targets.get(target.ref).actions.includes("click") &&
-          !/\b(delete|remove|destroy|refund|reset|sign out|log out)\b/i.test(
+          !/\b(delete|remove|destroy|refund|reset|sign\s*out|log\s*out)\b/i.test(
             target.label,
           ),
       );
@@ -1551,7 +1677,7 @@
           `${action[0].toUpperCase() + action.slice(1)} ${target.label}`,
           () => {
             this.continuation = null;
-            this.submit("", `lazzzy_browser_${action}_${target.ref}`);
+            this.submit("", `voice_control_browser_${action}_${target.ref}`);
           },
           suggestions,
         );
@@ -1603,12 +1729,20 @@
       if (this.help.hidden) return;
       this.renderCatalog();
       this.shadowRoot.querySelector("#search").focus();
+      await this.loadCatalog();
+    }
+
+    async loadCatalog() {
+      const path = location.pathname;
+      const version = this.catalogVersion = (this.catalogVersion || 0) + 1;
       try {
         const result = await this.api("commands");
+        if (path !== location.pathname || version !== this.catalogVersion) return;
         this.catalog = result.commands;
         this.renderCatalog();
       } catch (error) {
-        this.status.textContent = error.message;
+        if (path === location.pathname && version === this.catalogVersion)
+          this.status.textContent = error.message;
       }
     }
 
@@ -1616,19 +1750,19 @@
       const focusedKey = this.shadowRoot.activeElement?.dataset.commandKey;
       const commands = [...(this.catalog || [])];
       try {
-        if (this.dataset.browserActions === "true") {
+        if (this.browserActionsEnabled()) {
           snapshot ||= this.discoverBrowserControls();
           for (const target of snapshot.page.elements) {
             if (target.ref === snapshot.page.selected_ref) {
               commands.push({
-                key: `lazzzy_browser_enter_${target.ref}`,
+                key: `voice_control_browser_enter_${target.ref}`,
                 group: "On this page",
                 description: `Enter into selected field (${target.label})`,
                 examples: ["enter <value>"],
               });
               if (snapshot.targets.get(target.ref).actions.includes("clear")) {
                 commands.push({
-                  key: `lazzzy_browser_clear_selected_${target.ref}`,
+                  key: `voice_control_browser_clear_selected_${target.ref}`,
                   group: "On this page",
                   description: `Clear selected field (${target.label})`,
                   examples: ["clear this field"],
@@ -1637,7 +1771,7 @@
             }
             for (const action of snapshot.targets.get(target.ref).actions) {
               commands.push({
-                key: `lazzzy_browser_${action}_${target.ref}`,
+                key: `voice_control_browser_${action}_${target.ref}`,
                 group: "On this page",
                 description:
                   action === "reveal"
@@ -1649,7 +1783,7 @@
           }
           for (const direction of ["up", "down", "top", "bottom"]) {
             commands.push({
-              key: `lazzzy_browser_scroll_${direction}`,
+              key: `voice_control_browser_scroll_${direction}`,
               group: "On this page",
               description: `Scroll ${direction}`,
               examples: [],
@@ -1657,14 +1791,14 @@
           }
           for (const direction of ["back", "forward"]) {
             commands.push({
-              key: `lazzzy_browser_history_${direction}`,
+              key: `voice_control_browser_history_${direction}`,
               group: "On this page",
               description: `Go ${direction}`,
               examples: [],
             });
           }
           commands.push({
-            key: "lazzzy_browser_submit",
+            key: "voice_control_browser_submit",
             group: "On this page",
             description: "Submit active form",
             examples: ["submit", "submit this form"],
@@ -1770,5 +1904,5 @@
       return previous[right.length] <= limit;
     }
   }
-  customElements.define("lazzzy-widget", LazzzyWidget);
+  customElements.define("voice-control-widget", VoiceControlWidget);
 })();

@@ -20,4 +20,43 @@ jobs:
           cache-version: ${{ matrix.rails }}
       - run: bundle exec rake test
       - run: bundle exec rubocop
-      - run: gem build lazzzy.gemspec
+      - run: gem build voice_control.gemspec
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ruby-coverage-${{ strategy.job-index }}
+          path: coverage/ruby
+  javascript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run lint
+      - run: npm run test:coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: javascript-coverage
+          path: coverage/javascript
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-results
+          path: |
+            playwright-report
+            test-results

@@ -1,21 +1,21 @@
-# lazzzy
+# voice_control
 
 **You say it. Your app does it.**
 
 Voice and typed commands for Rails. Define actions in Ruby, keep your authorization, and give users a shortcut to the work they already do.
 
 ```ruby
-Lazzzy.configure do |config|
+VoiceControl.configure do |config|
   config.command :open_users,
     description: "Open users", aliases: ["show people"] do
-    execute { |_args, _context| Lazzzy::Result.navigate(main_app.users_path) }
+    execute { |_args, _context| VoiceControl::Result.navigate(main_app.users_path) }
   end
 end
 ```
 
 Say **“show people.”** Your app opens its users page.
 
-| You provide | lazzzy handles |
+| You provide | voice_control handles |
 | --- | --- |
 | Ruby actions and permissions | Command matching, typed arguments, and follow-up questions |
 | Existing buttons and forms | Optional page discovery: click, fill, select, check, and submit |
@@ -35,20 +35,20 @@ Add it to your application's Gemfile:
 
 ```ruby
 # Gemfile
-gem "lazzzy"
+gem "voice_control"
 ```
 
 The gem is not published to RubyGems yet. Until release, [build and install a local copy](CONTRIBUTING.md#packaging), then use `bundle install --local` for the first command below.
 
 ```sh
 bundle install
-bin/rails generate lazzzy:install
+bin/rails generate voice_control:install
 ```
 
-The generator creates an initializer and mounts `/lazzzy`. Edit the generated initializer:
+The generator creates an initializer and mounts `/voice_control`. Edit the generated initializer:
 
 ```ruby
-Lazzzy.configure do |config|
+VoiceControl.configure do |config|
   config.api_key = ENV.fetch("JEV_API_KEY")
   config.authorize = -> { current_user&.admin? } # Use your app's access check.
   config.browser_actions = true
@@ -56,7 +56,7 @@ Lazzzy.configure do |config|
 
   config.group "Navigation" do
     config.command :home, description: "Open home", aliases: ["go home"] do
-      execute { |_args, _context| Lazzzy::Result.navigate(main_app.root_path) }
+      execute { |_args, _context| VoiceControl::Result.navigate(main_app.root_path) }
     end
   end
 end
@@ -71,7 +71,7 @@ Add the widget before `</body>` in your layout. Keep the existing CSRF tags in `
 <%= csrf_meta_tags %>
 
 <!-- Before </body>: -->
-<%= lazzzy_widget %>
+<%= voice_control_widget %>
 ```
 
 Sign in with an authorized account. Click the microphone or press **⌘⇧U / Ctrl+Shift+U**, then type **“go home.”** Open **?** to see available commands. Help selections work without a Jev key; free-form interpretation needs one. Authorization defaults to denying access until configured.
@@ -83,8 +83,8 @@ Assets are served by the engine. No importmap, bundler, or asset-manifest change
 Clone the repository (access is required while it is private), then start the demo:
 
 ```sh
-git clone git@github.com:igorkasyanchuk/lazzzy.git
-cd lazzzy
+git clone git@github.com:igorkasyanchuk/voice_control.git
+cd voice_control
 bundle install
 bin/demo
 ```
@@ -98,13 +98,14 @@ Open [127.0.0.1:4100](http://127.0.0.1:4100). No credentials are needed: the dem
 | `change my plan` | Any demo page; asks which plan |
 | `fill workspace name with Studio North` | Settings |
 | `submit` | After selecting a Settings field |
+| `summarize workspace` | Settings only; shows details and a notice without reloading |
 | `undo that` | After an unsaved field edit |
 
 The standalone demo includes user CRUD, settings, account plans, and 24 seeded users. Its SQLite database persists changes between runs; SQLite is a development dependency, not a gem runtime requirement. [Demo guide →](docs/demo.md)
 
 ## More command examples
 
-Add these inside your `Lazzzy.configure` block. Route examples assume your application has `users_path` and `reports_path`; replace them with your own routes.
+Add these inside your `VoiceControl.configure` block. Route examples assume your application has `users_path` and `reports_path`; replace them with your own routes.
 
 **Search with a text argument:** “find users” asks for a search term; “find users named Alex” opens the results directly.
 
@@ -115,7 +116,7 @@ config.command :find_users, description: "Find users by name",
     extract: ->(text, _context) { text[/\bnamed\s+(.+)\z/i, 1] }
 
   execute do |args, _context|
-    Lazzzy::Result.navigate(main_app.users_path(q: args[:query]))
+    VoiceControl::Result.navigate(main_app.users_path(q: args[:query]))
   end
 end
 ```
@@ -131,7 +132,7 @@ config.group "Reports" do
       extract: ->(text, _context) { text[/\b(daily|weekly|monthly)\b/i, 1] }
 
     execute do |args, _context|
-      Lazzzy::Result.navigate(main_app.reports_path(period: args[:period]))
+      VoiceControl::Result.navigate(main_app.reports_path(period: args[:period]))
     end
   end
 end
@@ -143,7 +144,7 @@ end
 config.command :account_id, description: "Show my account ID",
   aliases: ["what is my account ID"] do
   execute do |_args, _context|
-    Lazzzy::Result.message("Your account ID is #{current_user.id}.")
+    VoiceControl::Result.message("Your account ID is #{current_user.id}.")
   end
 end
 ```
@@ -153,7 +154,7 @@ end
 ```ruby
 config.command :show_shortcuts, description: "Show keyboard shortcuts",
   aliases: ["show shortcuts"] do
-  execute { |_args, _context| Lazzzy::Result.event("app:show-shortcuts") }
+  execute { |_args, _context| VoiceControl::Result.event("app:show-shortcuts") }
 end
 ```
 
@@ -180,42 +181,78 @@ config.command :archive_project,
 
   execute do |args, _context|
     Project.find(args[:id]).archive! # Your existing operation.
-    Lazzzy::Result.message("Project archived.")
+    VoiceControl::Result.message("Project archived.")
   end
 end
 ```
 
 This example assumes your app provides `Project#archive!` and a Pundit-style `policy`. Callbacks run in the request controller; `main_app`, `current_user`, and your application helpers are available there. Arguments use symbol keys, context uses string keys. Your action owns transactions, tenant scoping, and domain idempotency.
 
+Return `VoiceControl::Result.reload` after a successful mutation when the whole page should reflect the change, such as an account plan update. It reloads the current URL, including its query and fragment. Use `Result.message` for feedback without reloading, or `Result.event` for a targeted JavaScript update.
+
+Add `notify:` to any result helper for an optional five-second completion notice. No reload is required:
+
+```ruby
+VoiceControl::Result.message("Preferences saved.", notify: "Saved successfully.")
+VoiceControl::Result.event("account:updated", { plan: "premium" }, notify: "Plan updated.")
+```
+
+Both keep the current page in place. Use `VoiceControl::Result.reload(notify: "Plan updated.")` when you also want a reload; the notice carries across it. Results show a separate notice only when you opt in. [Result options →](docs/commands.md#results)
+
+## Limit commands to relevant pages
+
+Use `pages:` to offer a command only on matching paths:
+
+```ruby
+config.command :show_user_help, description: "Show user management help",
+  pages: ["/users", %r{\A/users/\d+/edit\z}] do
+  execute { |_args, _context| VoiceControl::Result.message("Edit the fields, then say submit.") }
+end
+```
+
+Strings match exactly; regexes let you match routes containing IDs. Commands without `pages:` remain global, which is useful for navigation. Help and Jev receive only commands available on the current page. Page scopes are routing hints supplied by the browser; keep authorization in `authorize:`. [Scope rules →](docs/commands.md#page-scopes)
+
 [Arguments, groups, authorization, and result types →](docs/commands.md)
 
 ## Work with the page
 
-With `browser_actions = true`, lazzzy discovers supported visible controls at command time. You do not register each button in Ruby.
+With `browser_actions = true`, voice_control discovers supported visible controls at command time. You do not register each button in Ruby.
 
 - **Click and navigate:** “click Performance,” “go back,” “scroll to Billing.”
 - **Edit:** “enter 500 into Token balance,” “select Premium from Plan,” “check notifications.”
 - **Use the selected field:** “enter Hello,” “clear this field,” “submit.”
-- **Undo:** restore the last unsaved Lazzzy field edit.
+- **Undo:** restore the last unsaved VoiceControl field edit.
 
 Unique exact click labels resolve directly. Other phrases use Jev; ambiguous matches ask which command you meant. Discovery refreshes after Turbo navigation and DOM changes. Removed or changed controls are rejected before execution.
 
 Native dropdowns, checkboxes, radios, date/time inputs, and forms are supported. Iframes, other shadow roots, custom dropdowns, and multi-selects need application-specific commands. [Full browser-action guide →](docs/browser-actions.md)
 
+Disable automatic browser actions on a page, or exclude just part of its DOM:
+
+```html
+<!-- In the page's head: Ruby commands remain available. -->
+<meta name="voice-control-browser-actions" content="off">
+
+<!-- Or on a control/container: excludes it and its descendants. -->
+<section data-voice-control-ignore>Private controls go here</section>
+```
+
+These exclusions apply to discovery, help, and pending dynamic actions. [Exclusions and limits →](docs/browser-actions.md#exclude-pages-or-controls)
+
 ## Know what is sent and what can run
 
 Jev receives the transcript, configured page context (current URL/path by default), and available command descriptions. Dynamic discovery also sends control labels, IDs/names, types, and dropdown labels. Existing field values, Ruby code, and page HTML are not sent; anything the user types or speaks as a command is part of the transcript. Speech recognition may use the browser vendor's service.
 
-Use `data-lazzzy-ignore` for private UI regions and a context callback to remove sensitive URL parameters. Jev chooses an allowed command; the server validates arguments and checks permissions before issuing and executing a signed, session-bound ticket. Duplicate tickets use an atomic cache claim. A confidence score is a routing signal, not an authorization check or a guarantee of intent.
+Use `data-voice-control-ignore` for private UI regions and a context callback to remove sensitive URL parameters. Jev chooses an allowed command; the server validates arguments and checks permissions before issuing and executing a signed, session-bound ticket. Duplicate tickets use an atomic cache claim. A confidence score is a routing signal, not an authorization check or a guarantee of intent.
 
 [Privacy, deployment, cache setup, and failure semantics →](docs/deployment.md)
 
 ## Configuration
 
-All configuration options are below. Merge the settings you need into `config/initializers/lazzzy.rb`, keep your command definitions in the same block, and restart Rails. Values match the defaults except the API key, which is read from your environment.
+All configuration options are below. Merge the settings you need into `config/initializers/voice_control.rb`, keep your command definitions in the same block, and restart Rails. Values match the defaults except the API key, which is read from your environment.
 
 ```ruby
-Lazzzy.configure do |config|
+VoiceControl.configure do |config|
   # Server-side Jev key; a string or zero-argument callable. Default: nil.
   config.api_key = ENV["JEV_API_KEY"]
 
@@ -253,6 +290,9 @@ Lazzzy.configure do |config|
   # Close and stop listening after this many milliseconds of inactivity; use a positive value.
   config.idle_timeout = 120_000
 
+  # Browser request deadline in milliseconds (1_000..300_000); timed-out actions are never retried.
+  config.request_timeout = 30_000
+
   # Matches below this score ask for disambiguation; calibrate for your vocabulary.
   config.confidence_threshold = 0.35
 
@@ -267,7 +307,7 @@ Lazzzy.configure do |config|
   config.interpreter = nil
 
   # Unexpected-error callback; defaults to logging the error class and command, not the transcript.
-  config.on_error = ->(error, details) { Rails.logger.error("Lazzzy #{error.class} command=#{details[:command]}") }
+  config.on_error = ->(error, details) { Rails.logger.error("VoiceControl #{error.class} command=#{details[:command]}") }
 end
 ```
 
@@ -283,7 +323,7 @@ For a manually mounted web component, use `data-launcher-size="small"` for the c
 | [Configuration](docs/configuration.md) | Every option and default |
 | [Deployment](docs/deployment.md) | Shared cache, privacy, CSP, rate limiting, troubleshooting |
 | [Demo](docs/demo.md) | Local interpreter, Jev setup, SQLite data |
-| [Contributing](CONTRIBUTING.md) | Tests, manual browser regression fixture, packaging |
+| [Contributing](CONTRIBUTING.md) | Tests, >95% coverage gates, browser checks, packaging |
 
 **Debug a command:** set `config.debug = true`, restart Rails, and expand **Command details**. Inspect the matching source, chosen action, confidence, candidates, and Jev's choice/probabilities. Copy details for a reproducible report. Debug is off by default.
 

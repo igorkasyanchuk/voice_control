@@ -1,9 +1,9 @@
 require_relative "test_helper"
 require "rails/generators/test_case"
-require "generators/lazzzy/install/install_generator"
+require "generators/voice_control/install/install_generator"
 
 class GeneratorTest < Rails::Generators::TestCase
-  tests Lazzzy::Generators::InstallGenerator
+  tests VoiceControl::Generators::InstallGenerator
   destination File.expand_path("../tmp/generator", __dir__)
 
   setup do
@@ -14,9 +14,9 @@ class GeneratorTest < Rails::Generators::TestCase
 
   def test_installs_initializer_and_mount
     run_generator
-    assert_file "config/initializers/lazzzy.rb", /config.authorize = -> \{ false \}/
-    assert_file "config/initializers/lazzzy.rb", /JEV_API_KEY/
-    assert_file "config/initializers/lazzzy.rb", /config.launcher_size = :normal/
-    assert_file "config/routes.rb", /mount Lazzzy::Engine/
+    assert_file "config/initializers/voice_control.rb", /config.authorize = -> \{ false \}/
+    assert_file "config/initializers/voice_control.rb", /JEV_API_KEY/
+    assert_file "config/initializers/voice_control.rb", /config.launcher_size = :normal/
+    assert_file "config/routes.rb", /mount VoiceControl::Engine/
   end
 end

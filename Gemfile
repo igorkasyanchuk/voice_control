@@ -11,3 +11,4 @@ gem "turbo-rails"
 gem "rubocop-shopify", require: false
 gem "activerecord", ENV.fetch("RAILS_VERSION", ">= 8.0"), "< 9"
 gem "sqlite3", ">= 2.1"
+gem "simplecov", "~> 1.3", require: false

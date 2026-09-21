@@ -1,9 +1,9 @@
-module Lazzzy
+module VoiceControl
   class Configuration
     attr_accessor :api_key, :model, :parent_controller, :authorize, :context,
       :on_error, :interpreter, :keyboard_shortcut, :idle_timeout, :confidence_threshold,
       :execution_store, :identity, :browser_actions, :debug, :push_to_talk_shortcut
-    attr_reader :commands, :widget_position, :launcher_size
+    attr_reader :commands, :widget_position, :launcher_size, :request_timeout
 
     def initialize
       @model = "jev-latest"
@@ -11,9 +11,10 @@ module Lazzzy
       @authorize = -> { false }
       @identity = -> { respond_to?(:current_user, true) ? current_user&.id : nil }
       @context = ->(client_context) { client_context }
-      @on_error = ->(error, details) { Rails.logger.error("Lazzzy #{error.class} command=#{details[:command]}") }
+      @on_error = ->(error, details) { Rails.logger.error("VoiceControl #{error.class} command=#{details[:command]}") }
       @keyboard_shortcut = "mod+shift+u"
       @idle_timeout = 120_000
+      @request_timeout = 30_000
       @confidence_threshold = 0.35
       development_store = ActiveSupport::Cache::MemoryStore.new if Rails.env.development?
       @execution_store = -> { Rails.cache.is_a?(ActiveSupport::Cache::NullStore) && development_store ? development_store : Rails.cache }
@@ -29,6 +30,12 @@ module Lazzzy
       raise ArgumentError, "Widget position must be bottom_right or bottom_left" unless %w[bottom_right bottom_left].include?(value.to_s)
 
       @widget_position = value.to_sym
+    end
+
+    def request_timeout=(value)
+      raise ArgumentError, "Request timeout must be an integer from 1,000 to 300,000 milliseconds" unless value.is_a?(Integer) && value.between?(1_000, 300_000)
+
+      @request_timeout = value
     end
 
     def launcher_size=(value)

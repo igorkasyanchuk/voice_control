@@ -1,6 +1,6 @@
 # Security
 
-Lazzzy is currently unreleased. Do not use public issues to disclose exploitable vulnerabilities, credentials, transcripts, or private page data. Before public publication, the maintainer must establish and publish a private reporting channel; this checkout does not yet advertise one.
+VoiceControl is currently unreleased. Do not use public issues to disclose exploitable vulnerabilities, credentials, transcripts, or private page data. Before public publication, the maintainer must establish and publish a private reporting channel; this checkout does not yet advertise one.
 
 ## Integration boundary
 

@@ -1,24 +1,53 @@
 require_relative "test_helper"
 
-class CommandsTest < LazzzyTest
+class CommandsTest < VoiceControlTest
+  def test_reload_can_opt_into_a_completion_notification
+    @config.command :saved, description: "Save account" do
+      execute { |_args, _context| VoiceControl::Result.reload(notify: "Plan updated.") }
+    end
+    result = submit(command: "saved")
+    assert_equal({ "kind" => "reload", "notification" => "Plan updated." }, execute(result.fetch("ticket")))
+  end
+
+  def test_initializer_template_denies_access_until_configured_and_registers_working_navigation
+    @config.commands.clear
+    load File.expand_path("../lib/generators/voice_control/install/templates/voice_control.rb", __dir__)
+    get "/voice_control/commands"
+    assert_response :forbidden
+    @config.authorize = -> { demo_admin? }
+    result = submit(command: "home")
+    assert_equal({ "kind" => "navigate", "url" => "/" }, execute(result.fetch("ticket")))
+    assert_equal :normal, @config.launcher_size
+    assert_equal false, @config.browser_actions
+  end
+
+  def test_successful_commands_can_reload_the_current_page
+    @config.command :refresh, description: "Refresh after saving" do
+      execute { |_args, _context| VoiceControl::Result.reload }
+    end
+    result = submit(command: "refresh")
+    assert_equal({ "kind" => "reload" }, execute(result.fetch("ticket")))
+    assert_response :success
+  end
+
   def test_widget_renders_and_does_not_leak_key
     @config.api_key = "secret-api-key"
     get "/"
-    assert_select "lazzzy-widget[data-turbo-permanent]", 1
-    assert_select 'script[src^="/lazzzy/widget.js"]', 1 do |scripts|
+    assert_select "voice-control-widget[data-turbo-permanent]", 1
+    assert_select 'script[src^="/voice_control/widget.js"]', 1 do |scripts|
       assert_match(/\?v=[a-f0-9]{12}\z/, scripts.first["src"])
     end
     refute_includes response.body, "secret-api-key"
     get "/", headers: { "X-Demo-Role" => "guest" }
-    assert_select "lazzzy-widget", 0
+    assert_select "voice-control-widget", 0
   end
 
   def test_catalog_is_authorized_and_contains_argument_schema
-    get "/lazzzy/commands"
+    get "/voice_control/commands"
     assert_response :success
     assert_equal "no-store", response.headers["Cache-Control"]
     assert_equal "integer", response.parsed_body["commands"].first["arguments"].first["type"]
-    get "/lazzzy/commands", headers: { "X-Demo-Role" => "guest" }
+    get "/voice_control/commands", headers: { "X-Demo-Role" => "guest" }
     assert_response :forbidden
   end
 
@@ -67,7 +96,7 @@ class CommandsTest < LazzzyTest
     allowed = true
     @config.command :private, description: "Private", visible: -> { allowed }, authorize: ->(args, _context) { args[:user_id] == 42 } do
       argument :user_id, :integer
-      execute { |_args, _context| Lazzzy::Result.message("OK") }
+      execute { |_args, _context| VoiceControl::Result.message("OK") }
     end
     result = submit(command: "private")
     submit(transcript: "7", continuation: result["continuation"])
@@ -77,15 +106,15 @@ class CommandsTest < LazzzyTest
     allowed = false
     execute(result["ticket"])
     assert_response :forbidden
-    get "/lazzzy/commands"
+    get "/voice_control/commands"
     refute response.parsed_body["commands"].any? { |command| command["key"] == "private" }
   end
 
   def test_csrf_protection_for_both_posts
-    post "/lazzzy/interpret", params: { command: "home" }, as: :json
+    post "/voice_control/interpret", params: { command: "home" }, as: :json
     assert_response :unprocessable_content
     assert_match "session changed", response.parsed_body["message"]
-    post "/lazzzy/execute", params: { ticket: "bad" }, as: :json
+    post "/voice_control/execute", params: { ticket: "bad" }, as: :json
     assert_response :unprocessable_content
     assert_empty @events
   end
@@ -101,7 +130,7 @@ class CommandsTest < LazzzyTest
     other = open_session
     other.get "/"
     token = Nokogiri::HTML(other.response.body).at_css('meta[name="csrf-token"]')["content"]
-    other.post "/lazzzy/execute", params: { ticket: result["ticket"] }, as: :json, headers: { "X-CSRF-Token" => token }
+    other.post "/voice_control/execute", params: { ticket: result["ticket"] }, as: :json, headers: { "X-CSRF-Token" => token }
     assert_equal 422, other.response.status
     assert_empty @events
   end
@@ -164,7 +193,7 @@ class CommandsTest < LazzzyTest
   def test_oversized_signed_state_is_rejected_before_issuing_an_unusable_ticket
     @config.command :large, description: "Large" do
       argument :value, :string, extract: ->(text, _context) { text }
-      execute { |_args, _context| Lazzzy::Result.message("Done") }
+      execute { |_args, _context| VoiceControl::Result.message("Done") }
     end
     result = submit(command: "large", transcript: "😀" * 2000, context: { note: "x" * 4000 })
     if result["ticket"]
@@ -178,10 +207,10 @@ class CommandsTest < LazzzyTest
   end
 
   def test_public_assets_are_available_without_authentication
-    get "/lazzzy/widget.js", headers: { "X-Demo-Role" => "guest" }
+    get "/voice_control/widget.js", headers: { "X-Demo-Role" => "guest" }
     assert_response :success
     assert_includes response.body, "customElements.define"
-    get "/lazzzy/widget.css"
+    get "/voice_control/widget.css"
     assert_response :success
     assert_includes response.body, ":host"
   end
@@ -197,24 +226,24 @@ class ConversationConcurrencyTest < Minitest::Test
   end
 
   def test_concurrent_execution_only_invokes_the_action_once
-    original = Lazzzy.configuration
-    config = Lazzzy::Configuration.new
+    original = VoiceControl.configuration
+    config = VoiceControl::Configuration.new
     cache = ActiveSupport::Cache::MemoryStore.new
     config.execution_store = -> { cache }
     calls = Queue.new
     config.command :run_once, description: "Run once" do
       execute do |_args, _context|
         calls << :called
-        Lazzzy::Result.message("Done")
+        VoiceControl::Result.message("Done")
       end
     end
-    Lazzzy.instance_variable_set(:@configuration, config)
-    conversation = Lazzzy::Conversation.new(RequestContext.new)
+    VoiceControl.instance_variable_set(:@configuration, config)
+    conversation = VoiceControl::Conversation.new(RequestContext.new)
     result = conversation.interpret(transcript: "", client_context: {}, command_key: "run_once")
     threads = 8.times.map do
       Thread.new do
         conversation.execute(result[:ticket])
-      rescue Lazzzy::InvalidInput
+      rescue VoiceControl::InvalidInput
         :already_submitted
       end
     end
@@ -222,6 +251,6 @@ class ConversationConcurrencyTest < Minitest::Test
     assert_equal 1, calls.size
     assert_equal 7, results.count(:already_submitted)
   ensure
-    Lazzzy.instance_variable_set(:@configuration, original)
+    VoiceControl.instance_variable_set(:@configuration, original)
   end
 end

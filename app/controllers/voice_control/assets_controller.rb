@@ -1,4 +1,4 @@
-module Lazzzy
+module VoiceControl
   class AssetsController < ActionController::Base
     skip_forgery_protection
     def javascript

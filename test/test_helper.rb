@@ -1,3 +1,11 @@
+require "simplecov"
+SimpleCov.start do
+  enable_coverage :branch
+  coverage_dir "coverage/ruby"
+  cover "{lib,app,config}/**/*.rb"
+  minimum_coverage line: 95.01, branch: 95.01
+end
+
 ENV["RAILS_ENV"] = "test"
 require_relative "dummy/config/environment"
 require "minitest/autorun"
@@ -10,15 +18,15 @@ class ActionDispatch::IntegrationTest
   fixtures :demo_users, :demo_settings
 end
 
-class LazzzyTest < ActionDispatch::IntegrationTest
+class VoiceControlTest < ActionDispatch::IntegrationTest
   def setup
     WebMock.reset!
-    @original_config = Lazzzy.configuration
-    @config = Lazzzy::Configuration.new
+    @original_config = VoiceControl.configuration
+    @config = VoiceControl::Configuration.new
     @config.authorize = -> { demo_admin? }
     @config.interpreter = DemoInterpreter.new
     @config.execution_store = -> { Rails.cache }
-    Lazzzy.instance_variable_set(:@configuration, @config)
+    VoiceControl.instance_variable_set(:@configuration, @config)
     Rails.cache.clear
     @events = []
     events = @events
@@ -28,10 +36,10 @@ class LazzzyTest < ActionDispatch::IntegrationTest
         argument :amount, :integer, extract: ->(text, _context) { text[/(\d+) tokens/, 1] }, validate: ->(value) { value.between?(1, 1000) }
         execute { |args, _context|
           events << args
-          Lazzzy::Result.message("Granted #{args[:amount]} tokens") }
+          VoiceControl::Result.message("Granted #{args[:amount]} tokens") }
       end
       @config.command :home, description: "Open home", examples: ["open home"] do
-        execute { |_args, _context| Lazzzy::Result.navigate("/") }
+        execute { |_args, _context| VoiceControl::Result.navigate("/") }
       end
     end
     get "/"
@@ -39,16 +47,16 @@ class LazzzyTest < ActionDispatch::IntegrationTest
   end
 
   def teardown
-    Lazzzy.instance_variable_set(:@configuration, @original_config)
+    VoiceControl.instance_variable_set(:@configuration, @original_config)
   end
 
   def submit(headers: {}, **payload)
-    post "/lazzzy/interpret", params: { context: {}, **payload }, as: :json, headers: { "X-CSRF-Token" => @csrf, **headers }
+    post "/voice_control/interpret", params: { context: {}, **payload }, as: :json, headers: { "X-CSRF-Token" => @csrf, **headers }
     response.parsed_body
   end
 
   def execute(ticket, headers: {})
-    post "/lazzzy/execute", params: { ticket: ticket }, as: :json, headers: { "X-CSRF-Token" => @csrf, **headers }
+    post "/voice_control/execute", params: { ticket: ticket }, as: :json, headers: { "X-CSRF-Token" => @csrf, **headers }
     response.parsed_body
   end
 end

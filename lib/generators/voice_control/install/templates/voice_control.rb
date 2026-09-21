@@ -1,4 +1,4 @@
-Lazzzy.configure do |config|
+VoiceControl.configure do |config|
   # Server-side Jev API key; accepts a string or a zero-argument callable.
   config.api_key = ENV["JEV_API_KEY"]
 
@@ -39,6 +39,9 @@ Lazzzy.configure do |config|
   # Close and stop listening after this many milliseconds of inactivity; use a positive number.
   config.idle_timeout = 120_000
 
+  # Maximum milliseconds per request, including reading its response; execution timeouts never retry automatically.
+  config.request_timeout = 30_000
+
   # Matches below this confidence ask for disambiguation. Calibrate for your vocabulary.
   config.confidence_threshold = 0.35
 
@@ -56,11 +59,11 @@ Lazzzy.configure do |config|
 
   # Receives unexpected errors and command/controller details; the UI shows a generic message.
   # The default logs only the error class and command key. Replace with your error tracker if needed.
-  # config.on_error = ->(error, details) { Rails.logger.error("Lazzzy #{error.class} command=#{details[:command]}") }
+  # config.on_error = ->(error, details) { Rails.logger.error("VoiceControl #{error.class} command=#{details[:command]}") }
 
   config.group "Navigation" do
     config.command :home, description: "Open home", aliases: ["go home"], examples: ["open home"] do
-      execute { |_args, _context| Lazzzy::Result.navigate(main_app.root_path) }
+      execute { |_args, _context| VoiceControl::Result.navigate(main_app.root_path) }
     end
   end
 end

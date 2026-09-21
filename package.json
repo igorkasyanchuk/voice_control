@@ -1,0 +1,22 @@
+{
+  "name": "voice_control-development",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:browser": "playwright test",
+    "lint": "eslint assets test/javascript test/browser/widget_test.js test/e2e playwright.config.js"
+  },
+  "engines": {
+    "node": "^24.15.0 || >=26.0.0"
+  },
+  "devDependencies": {
+    "@hotwired/turbo": "8.0.23",
+    "@playwright/test": "1.63.0",
+    "@vitest/coverage-v8": "5.0.1",
+    "eslint": "10.11.0",
+    "jsdom": "30.1.0",
+    "vitest": "5.0.1"
+  }
+}

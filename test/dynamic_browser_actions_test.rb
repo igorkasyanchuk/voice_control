@@ -1,6 +1,6 @@
 require_relative "test_helper"
 
-class DynamicBrowserActionsTest < LazzzyTest
+class DynamicBrowserActionsTest < VoiceControlTest
   def setup
     super
     @config.browser_actions = true
@@ -11,23 +11,23 @@ class DynamicBrowserActionsTest < LazzzyTest
   end
 
   def test_jev_selects_discovered_controls_without_registered_commands
-    @config.interpreter = Lazzzy::Jev.new
+    @config.interpreter = VoiceControl::Jev.new
     @config.api_key = "test-key"
     @page[:elements][1][:value] = "PRIVATE FIELD VALUE"
-    request = stub_request(:post, Lazzzy::Jev::ENDPOINT).with(body: lambda { |body|
+    request = stub_request(:post, VoiceControl::Jev::ENDPOINT).with(body: lambda { |body|
       criteria = JSON.parse(body).dig("questions", "action", "criteria")
-      criteria["lazzzy_browser_click_e1"].include?("Save changes") &&
-        criteria["lazzzy_browser_fill_e2"].include?("Display name") &&
-        criteria["lazzzy_browser_fill_e2"].include?("enter Display name") &&
+      criteria["voice_control_browser_click_e1"].include?("Save changes") &&
+        criteria["voice_control_browser_fill_e2"].include?("Display name") &&
+        criteria["voice_control_browser_fill_e2"].include?("enter Display name") &&
         !body.include?("PRIVATE FIELD VALUE")
     }).to_return(status: 200, body: { answers: { action: {
-      choice: "lazzzy_browser_click_e1", confidence: 1.0, probabilities: { lazzzy_browser_click_e1: 1.0 },
+      choice: "voice_control_browser_click_e1", confidence: 1.0, probabilities: { voice_control_browser_click_e1: 1.0 },
     } } }.to_json)
     result = submit(transcript: "press the save button", browser_page: @page)
     assert_equal "execute", result["kind"]
     assert_equal({ "kind" => "browser", "action" => "click", "target" => "e1", "page_id" => "page-123" }, execute(result["ticket"]))
     assert_requested request
-    refute @config.commands.key?("lazzzy_browser_click_e1")
+    refute @config.commands.key?("voice_control_browser_click_e1")
   end
 
   def test_idless_field_followup_keeps_the_original_target
@@ -42,7 +42,7 @@ class DynamicBrowserActionsTest < LazzzyTest
 
   def test_inline_text_patterns
     ['fill Display name with "Studio North"', "fill Display name with Studio North", "type Studio North into Display name"].each do |text|
-      result = submit(transcript: text, command: "lazzzy_browser_fill_e2", browser_page: @page)
+      result = submit(transcript: text, command: "voice_control_browser_fill_e2", browser_page: @page)
       assert_equal "execute", result["kind"]
       assert_equal "Studio North", execute(result["ticket"])["value"]
     end
@@ -64,7 +64,7 @@ class DynamicBrowserActionsTest < LazzzyTest
     @config.interpreter = ->(**_args) { flunk "Duplicate exact clicks must not be guessed" }
     result = submit(transcript: "click performance", browser_page: @page)
     assert_equal "ambiguous", result["kind"]
-    assert_equal %w[lazzzy_browser_click_e1 lazzzy_browser_click_e2], result["candidates"].map { |candidate| candidate["key"] }
+    assert_equal %w[voice_control_browser_click_e1 voice_control_browser_click_e2], result["candidates"].map { |candidate| candidate["key"] }
     result = submit(transcript: "two", continuation: result["continuation"])
     assert_equal "e2", execute(result["ticket"])["target"]
   end
@@ -99,7 +99,7 @@ class DynamicBrowserActionsTest < LazzzyTest
     @config.browser_actions = false
     execute(result["ticket"])
     assert_response :forbidden
-    submit(command: "lazzzy_browser_submit", browser_page: @page)
+    submit(command: "voice_control_browser_submit", browser_page: @page)
     assert_response :forbidden
   end
 
@@ -133,9 +133,9 @@ class DynamicBrowserActionsTest < LazzzyTest
     assert_equal({ "kind" => "browser", "action" => "clear", "target" => "e2", "page_id" => "page-123" }, execute(result["ticket"]))
     result = submit(transcript: "clear this field", browser_page: @page.merge(selected_ref: "e2"))
     assert_equal({ "kind" => "browser", "action" => "clear", "target" => "e2", "page_id" => "page-123", "selected" => true }, execute(result["ticket"]))
-    submit(command: "lazzzy_browser_clear_selected_e2", browser_page: @page)
+    submit(command: "voice_control_browser_clear_selected_e2", browser_page: @page)
     assert_response :forbidden
-    submit(command: "lazzzy_browser_clear_e1", browser_page: @page)
+    submit(command: "voice_control_browser_clear_e1", browser_page: @page)
     assert_response :forbidden
   end
 
@@ -160,9 +160,9 @@ class DynamicBrowserActionsTest < LazzzyTest
       result = submit(transcript: phrase, browser_page: @page)
       assert_equal({ "kind" => "browser", "action" => "reveal", "target" => "e3", "page_id" => "page-123" }, execute(result["ticket"]))
     end
-    submit(command: "lazzzy_browser_click_e3", browser_page: @page)
+    submit(command: "voice_control_browser_click_e3", browser_page: @page)
     assert_response :forbidden
-    submit(command: "lazzzy_browser_reveal_e2", browser_page: @page)
+    submit(command: "voice_control_browser_reveal_e2", browser_page: @page)
     assert_response :forbidden
   end
 
@@ -182,7 +182,7 @@ class DynamicBrowserActionsTest < LazzzyTest
       result = submit(transcript: phrase, browser_page: @page)
       assert_equal "choose", execute(result["ticket"])["action"]
     end
-    submit(command: "lazzzy_browser_uncheck_e1", browser_page: @page)
+    submit(command: "voice_control_browser_uncheck_e1", browser_page: @page)
     assert_response :forbidden
     get "/users/1/edit"
     assert_select 'fieldset input[type="radio"][name="user[status]"]', count: 2
@@ -229,7 +229,7 @@ class DynamicBrowserActionsTest < LazzzyTest
   end
 
   def test_selected_field_must_be_an_available_fill_target
-    submit(command: "lazzzy_browser_enter_e2", browser_page: @page)
+    submit(command: "voice_control_browser_enter_e2", browser_page: @page)
     assert_response :forbidden
     %w[e1 e99].each do |ref|
       submit(command: "home", browser_page: @page.merge(selected_ref: ref))
@@ -244,7 +244,7 @@ class DynamicBrowserActionsTest < LazzzyTest
       assert_equal "execute", result["kind"], transcript
       assert_equal({ "kind" => "browser", "action" => "select", "target" => "e2", "page_id" => "page-123", "option" => "o1" }, execute(result["ticket"]))
     end
-    result = submit(command: "lazzzy_browser_select_e2", browser_page: @page)
+    result = submit(command: "voice_control_browser_select_e2", browser_page: @page)
     assert_equal "question", result["kind"]
     result = submit(transcript: "Enterprise", continuation: result["continuation"])
     assert_equal "question", result["kind"]
@@ -265,7 +265,7 @@ class DynamicBrowserActionsTest < LazzzyTest
   end
 
   def test_low_confidence_selection_restores_dynamic_candidates
-    @config.interpreter = ->(**_args) { { command: "lazzzy_browser_click_e1", confidence: 0.1, candidates: %w[lazzzy_browser_click_e1 lazzzy_browser_focus_e2] } }
+    @config.interpreter = ->(**_args) { { command: "voice_control_browser_click_e1", confidence: 0.1, candidates: %w[voice_control_browser_click_e1 voice_control_browser_focus_e2] } }
     result = submit(transcript: "use this control", browser_page: @page)
     assert_equal "ambiguous", result["kind"]
     assert_equal 2, result["candidates"].length
@@ -276,7 +276,7 @@ class DynamicBrowserActionsTest < LazzzyTest
   def test_numeric_fields_support_inline_values_followups_and_focus
     @page[:elements][1].merge!(label: "Token balance", type: "number")
     ["fill Token balance with 500", "enter 12.5 into Token balance", "set Token balance to -10"].zip(%w[500 12.5 -10]).each do |transcript, value|
-      result = submit(transcript: transcript, command: "lazzzy_browser_fill_e2", browser_page: @page)
+      result = submit(transcript: transcript, command: "voice_control_browser_fill_e2", browser_page: @page)
       assert_equal "execute", result["kind"]
       assert_equal value, execute(result["ticket"])["value"]
     end
@@ -284,27 +284,27 @@ class DynamicBrowserActionsTest < LazzzyTest
     assert_equal "question", result["kind"]
     result = submit(transcript: "250", continuation: result["continuation"])
     assert_equal "250", execute(result["ticket"])["value"]
-    result = submit(command: "lazzzy_browser_focus_e2", browser_page: @page)
+    result = submit(command: "voice_control_browser_focus_e2", browser_page: @page)
     assert_equal "focus", execute(result["ticket"])["action"]
   end
 
   def test_disabling_browser_actions_invalidates_outstanding_tickets
-    result = submit(command: "lazzzy_browser_click_e1", browser_page: @page)
+    result = submit(command: "voice_control_browser_click_e1", browser_page: @page)
     @config.browser_actions = false
     execute(result["ticket"])
     assert_response :forbidden
-    submit(command: "lazzzy_browser_click_e1", browser_page: @page)
+    submit(command: "voice_control_browser_click_e1", browser_page: @page)
     assert_response :forbidden
   end
 
   def test_browser_commands_require_access_and_the_matching_discovery
-    submit(command: "lazzzy_browser_click_e1", browser_page: @page, headers: { "X-Demo-Role" => "guest" })
+    submit(command: "voice_control_browser_click_e1", browser_page: @page, headers: { "X-Demo-Role" => "guest" })
     assert_response :forbidden
-    submit(command: "lazzzy_browser_click_e99", browser_page: @page)
+    submit(command: "voice_control_browser_click_e99", browser_page: @page)
     assert_response :forbidden
-    submit(command: "lazzzy_browser_click_e1")
+    submit(command: "voice_control_browser_click_e1")
     assert_response :forbidden
-    result = submit(command: "lazzzy_browser_click_e1", browser_page: @page)
+    result = submit(command: "voice_control_browser_click_e1", browser_page: @page)
     execute(result["ticket"], headers: { "X-Demo-Role" => "guest" })
     assert_response :forbidden
   end
@@ -325,7 +325,7 @@ class DynamicBrowserActionsTest < LazzzyTest
 
   def test_ticket_does_not_carry_the_whole_page
     @page[:elements] = 200.times.map { |index| { ref: "e#{index}", label: "Button #{index}", id: "button#{index}", name: "", tag: "button", type: "" } }
-    result = submit(command: "lazzzy_browser_click_e199", browser_page: @page)
+    result = submit(command: "voice_control_browser_click_e199", browser_page: @page)
     assert_equal "execute", result["kind"]
     assert_operator result["ticket"].bytesize, :<, 4000
     assert_equal "e199", execute(result["ticket"])["target"]
@@ -337,8 +337,8 @@ class DynamicBrowserActionsTest < LazzzyTest
         options: 20.times.map { |option| { ref: "o#{option}", label: "#{option}" + "x" * 155 } } }
     end
     @config.interpreter = ->(**_args) {
-      { command: "lazzzy_browser_select_e0", confidence: 0.1,
-      candidates: %w[lazzzy_browser_select_e0 lazzzy_browser_select_e1 lazzzy_browser_select_e2] } }
+      { command: "voice_control_browser_select_e0", confidence: 0.1,
+      candidates: %w[voice_control_browser_select_e0 voice_control_browser_select_e1 voice_control_browser_select_e2] } }
     result = submit(transcript: "😀" * 2000, context: { note: "x" * 4000 }, browser_page: @page)
     assert_response :unprocessable_content
     assert_match(/too large/, result["message"])
@@ -347,12 +347,12 @@ class DynamicBrowserActionsTest < LazzzyTest
 
   def test_dynamic_configuration_is_visible_to_the_widget
     get "/"
-    assert_select 'lazzzy-widget[data-browser-actions="true"]'
+    assert_select 'voice-control-widget[data-browser-actions="true"]'
     @config.browser_actions = false
     get "/"
-    assert_select 'lazzzy-widget[data-browser-actions="false"]'
+    assert_select 'voice-control-widget[data-browser-actions="false"]'
     assert_raises(ArgumentError) do
-      @config.command("lazzzy_browser_click_e1", description: "Collision") { execute { Lazzzy::Result.message("No") } }
+      @config.command("voice_control_browser_click_e1", description: "Collision") { execute { VoiceControl::Result.message("No") } }
     end
   end
 end

@@ -5,16 +5,45 @@
 Enable automatic browser actions with one option:
 
 ```ruby
-Lazzzy.configure do |config|
+VoiceControl.configure do |config|
   config.browser_actions = true
 end
 ```
 
-No per-element Ruby commands are needed. Before each new command, the widget discovers the current document's visible, enabled buttons, local links, editable text and number fields, textareas, native checkboxes and radio buttons, and native single-select dropdowns. It sends their labels, IDs, names, element types, and temporary references to the server. Jev chooses the action and target alongside your Ruby vocabulary. Elements without IDs work too. Help includes these controls under **On this page** and refreshes automatically after Turbo navigation, browser history changes, and DOM updates such as React renders. Refreshes are debounced while the widget is visible; reopening help also discovers the current controls. Discovered labels omit emoji, decorative symbols, and icon markup while preserving words and readable punctuation. Controls must have readable text or a label: `data-lazzzy-label`, an accessible/associated label, image alt text, a button caption, placeholder, or title. Unlabeled and decoration-only controls are excluded; HTML IDs/names and invented “Control 28” labels are never used as fallback names. Add `aria-label="Open menu"` to make an icon-only button discoverable. The dummy app enables this option and has no hardcoded commands for its buttons or fields.
+No per-element Ruby commands are needed. Before each new command, the widget discovers the current document's visible, enabled buttons, local links, editable text and number fields, textareas, native checkboxes and radio buttons, and native single-select dropdowns. It sends their labels, IDs, names, element types, and temporary references to the server. Jev chooses the action and target alongside your Ruby vocabulary. Elements without IDs work too. Help includes these controls under **On this page** and refreshes automatically after Turbo navigation, browser history changes, and DOM updates such as React renders. Refreshes are debounced while the widget is visible; reopening help also discovers the current controls. Discovered labels omit emoji, decorative symbols, and icon markup while preserving words and readable punctuation. Controls must have readable text or a label: `data-voice-control-label`, an accessible/associated label, image alt text, a button caption, placeholder, or title. Unlabeled and decoration-only controls are excluded; HTML IDs/names and invented “Control 28” labels are never used as fallback names. Add `aria-label="Open menu"` to make an icon-only button discoverable. The dummy app enables this option and has no hardcoded commands for its buttons or fields.
+
+### Exclude pages or controls
+
+Place this in the page's `<head>` to disable all automatic browser actions on that page, including submit, scrolling, and history:
+
+```html
+<meta name="voice-control-browser-actions" content="off">
+```
+
+Ruby commands remain available, including explicit `Result.click`/`fill` commands. Remove the tag to use the application's `browser_actions` setting again; `content="on"` cannot enable discovery when the initializer disables it. Keep the tag specific to the current page: Turbo merges the document head, so use `data-turbo-temporary` on page-specific tags if they should be removed before the next Turbo render:
+
+```html
+<meta name="voice-control-browser-actions" content="off" data-turbo-temporary>
+```
+
+To exclude a button, form, or entire region instead:
+
+```html
+<button data-voice-control-ignore>Delete account</button>
+<section data-voice-control-ignore>
+  <label>Private note <textarea></textarea></label>
+</section>
+```
+
+`data-voice-control-ignore` is presence-based: even `data-voice-control-ignore="false"` excludes the element. Remove the attribute to include it again. Descendants and controls associated with an ignored form via `form="..."` are excluded. Excluded controls also reject explicit selector actions. Prefer ignoring the whole form when none of its fields or submission should be voice-accessible.
+
+Changes to these policies refresh help and suggestions while the widget is open. Dynamic execution rechecks the live policy, so adding an exclusion while Jev is responding prevents the pending action from touching that control. Already-sent server work cannot be undone. These are discovery controls, not access control; the underlying endpoints must still authorize every request.
+
+### Supported commands
 
 Try “click Save settings,” “focus workspace name,” or “enter Studio North into workspace name.” Text entry accepts quoted values, `fill … with …`, `set … to …`, and `enter/type … into …`. When no value is supplied, the widget asks a follow-up. Jev selects the control; deterministic extraction or the follow-up supplies the text.
 
-An exact **“click <label>”** match uses the discovered page control directly, ignoring case and extra whitespace. It bypasses Jev so an explicit button/link name cannot be replaced with an unrelated model guess. Duplicate labels ask you to choose; other phrasing still uses the configured interpreter. Authorization, signed tickets, and stale-control checks apply to both paths.
+An exact **“click <label>”** match uses the discovered page control directly, ignoring case and extra whitespace. It bypasses Jev so an explicit button/link name cannot be replaced with an unrelated model guess. Repeated links with the same readable label (ignoring case), destination, and navigation behavior appear as one action. Matching labels with different destinations or behaviors, and separate buttons, still ask you to choose; other phrasing uses the configured interpreter. Authorization, signed tickets, and stale-control checks apply to both paths.
 
 Field entry accepts **fill**, **enter**, **type**, and **set** as aliases. Try “enter token balance with 500”, “enter 500 into token balance”, or “set token balance to 500”. Say “enter token balance” without a value to get a follow-up question. Submit the form separately with “click Save user”.
 
@@ -38,9 +67,9 @@ Help search accepts partial labels and small spelling mistakes such as **“noti
 
 Native **date** and **time** fields support fill, focus, clear, selected-field entry, and Undo. Try **“set due date to October 1”**, **“set due date to 2026-10-01”**, or **“set start time to 2:30 PM”**. English month names use the browser's current year when omitted. Times accept 24-hour `14:30` or AM/PM notation. Invalid calendar dates, times, and values outside the field's min/max/step leave the old value intact. The Orders demo page includes unsaved practice fields. Date-time, month, week, and custom date-picker controls are not included.
 
-Generic table-row actions such as **Edit** or **Delete** gain context from a visible row header or the first identity cell: **“edit Alex Morgan”** can distinguish it from another row's Edit button. The widget prefers primary link/strong text and excludes secondary small text, ignored/hidden content, and input values. Explicit `aria-label`, `aria-labelledby`, and `data-lazzzy-label` names take precedence. A changed identity invalidates an in-flight action. If a row has no usable identity, supply an explicit accessible label.
+Generic table-row actions such as **Edit** or **Delete** gain context from a visible row header or the first identity cell: **“edit Alex Morgan”** can distinguish it from another row's Edit button. The widget prefers primary link/strong text and excludes secondary small text, ignored/hidden content, and input values. Explicit `aria-label`, `aria-labelledby`, and `data-voice-control-label` names take precedence. A changed identity invalidates an in-flight action. If a row has no usable identity, supply an explicit accessible label.
 
-Say **“undo that”** or click **Undo** to restore the last Lazzzy field fill, dropdown selection, or checkbox change. Undo is one level, local to the current page, and dispatches the same input/change events as editing. It expires after a conflicting manual edit, form submission, navigation, radio selection, or another completed non-field action. It does not reverse saved database changes or radio-group changes. Previous values stay only in widget memory and are never sent to the backend.
+Say **“undo that”** or click **Undo** to restore the last VoiceControl field fill, dropdown selection, or checkbox change. Undo is one level, local to the current page, and dispatches the same input/change events as editing. It expires after a conflicting manual edit, form submission, navigation, radio selection, or another completed non-field action. It does not reverse saved database changes or radio-group changes. Previous values stay only in widget memory and are never sent to the backend.
 
 ### Debug mode
 
@@ -54,7 +83,7 @@ Debug is off by default. When enabled, expand **Command details** below the widg
 
 Use **Copy details** to copy exactly the displayed report to your clipboard for a bug report. It includes the displayed phrase; review it before sharing. If clipboard access is unavailable, the widget offers manual copying. Nothing is uploaded or sent automatically.
 
-Discovery excludes password, file, hidden, disabled, read-only, and unsupported input types, plus the widget itself. Current field values, HTML, and link destinations are not sent. Button captions count as labels. Add `data-lazzzy-ignore` to a control or subtree to exclude it, or `data-lazzzy-label="Save profile"` to give a control a clearer name. Labels are sent to Jev when enabled, so exclude sections whose labels contain private information. Discovery is limited to 200 eligible controls and a 128KB request; larger pages report an error rather than silently omitting controls. Iframes and other shadow roots are not scanned.
+Discovery excludes password, file, hidden, disabled, read-only, and unsupported input types, plus the widget itself. Current field values, HTML, and link destinations are not sent. Button captions count as labels. Add `data-voice-control-ignore` to a control or subtree to exclude it, or `data-voice-control-label="Save profile"` to give a control a clearer name. Labels are sent to Jev when enabled, so exclude sections whose labels contain private information. Discovery is limited to 200 eligible controls and a 128KB request; larger pages report an error rather than silently omitting controls. Iframes and other shadow roots are not scanned.
 
 Actions stay bound to the original DOM element and page snapshot across follow-ups. Removed, replaced, relabeled, hidden, disabled, or changed-page controls are rejected. Jev returns a choice from the discovered controls, never generated JavaScript or a CSS selector. Normal server authorization and signed execution tickets apply; the underlying app remains responsible for authorizing any requests its controls initiate. This feature is off by default.
 
@@ -64,11 +93,11 @@ You can also register explicit browser actions in the Ruby vocabulary when you w
 config.group "Page controls" do
   config.command :fill_name, description: "Fill the workspace name field" do
     argument :value, :string, prompt: "What name should I enter?"
-    execute { |args, _context| Lazzzy::Result.fill("#workspace-name", args[:value]) }
+    execute { |args, _context| VoiceControl::Result.fill("#workspace-name", args[:value]) }
   end
 
   config.command :save_settings, description: "Click the Save settings button" do
-    execute { |_args, _context| Lazzzy::Result.click("#save-settings") }
+    execute { |_args, _context| VoiceControl::Result.click("#save-settings") }
   end
 end
 ```
@@ -80,4 +109,4 @@ Explicit selectors must match exactly one visible, enabled element. Click suppor
 Filling replaces the value and dispatches bubbling `input` and `change` events using the native value setter for React listeners. Clicking uses the element's normal click handler and browser form validation. For custom comboboxes, multi-select controls, or other JavaScript behavior, return a named `Result.event` and handle it in your app.
 
 
-Debug probabilities show readable command descriptions alongside their internal IDs, so duplicate labels remain distinguishable. IDs such as `lazzzy_browser_click_e28` identify controls for execution; they are not spoken command names.
+Debug probabilities show readable command descriptions alongside their internal IDs, so duplicate labels remain distinguishable. IDs such as `voice_control_browser_click_e28` identify controls for execution; they are not spoken command names.

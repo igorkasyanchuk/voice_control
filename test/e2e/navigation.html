@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="csrf-token" content="fixture-token">
+    <title>VoiceControl navigation fixture</title>
+    <script src="/turbo.js" defer></script>
+    <script src="/assets/widget.js" defer></script>
+  </head>
+  <body>
+    <h1>Account</h1>
+    <a href="/">Home</a><a href="/users">Users</a>
+    <form action="/users"><label>Name <input name="name" required></label><button>Save user</button></form>
+    <voice-control-widget id="voice-control-widget" data-turbo-permanent data-endpoint="/voice_control" data-browser-actions="true" data-request-timeout="1000"></voice-control-widget>
+  </body>
+</html>

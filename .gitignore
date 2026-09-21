@@ -11,3 +11,7 @@
 /IMPLEMENTATION_PLAN.md
 /VALIDATION.md
 /RELEASE_REVIEW.md
+/coverage/
+/node_modules/
+/playwright-report/
+/test-results/

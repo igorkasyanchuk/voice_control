@@ -1,17 +1,17 @@
 document.addEventListener("click", (event) => {
-  const trigger = event.target.closest("[data-open-lazzzy]");
+  const trigger = event.target.closest("[data-open-voice-control]");
   if (!trigger) return;
-  window.Lazzzy?.close();
+  window.VoiceControl?.close();
   trigger.focus();
-  document.querySelector("#try-lazzzy-dialog").showModal();
+  document.querySelector("#try-voice-control-dialog").showModal();
 });
 window.addEventListener("turbo:before-cache", () => {
-  document.querySelector("#try-lazzzy-dialog")?.close();
+  document.querySelector("#try-voice-control-dialog")?.close();
 });
 window.addEventListener("turbo:load", () => {
   document.querySelectorAll("[data-command]").forEach((button) => {
     button.addEventListener("click", () => {
-      const widget = document.querySelector("lazzzy-widget");
+      const widget = document.querySelector("voice-control-widget");
       widget.open();
       // A browser-action command may still be finishing when it clicks this button.
       window.queueMicrotask(() => widget.submit(button.dataset.command));

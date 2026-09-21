@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Reload regression fixture</title>
+  </head>
+  <body>
+    <voice-control-widget data-endpoint="../../assets"></voice-control-widget>
+    <script src="../../assets/widget.js"></script>
+    <script>
+      if (performance.getEntriesByType("navigation")[0].type === "reload") {
+        document.body.dataset.reloaded = "true";
+      } else {
+        const widget = document.querySelector("voice-control-widget");
+        widget.open(false);
+        widget.api = async (path) =>
+          path === "interpret"
+            ? { kind: "execute", ticket: "saved-plan" }
+            : { kind: "reload" };
+        widget.submit("set my user to premium");
+      }
+    </script>
+  </body>
+</html>

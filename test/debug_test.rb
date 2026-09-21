@@ -1,13 +1,13 @@
 require_relative "test_helper"
 
-class DebugTest < LazzzyTest
+class DebugTest < VoiceControlTest
   def test_debug_is_disabled_by_default_even_when_requested_by_client
     refute @config.debug
     result = submit(transcript: "open home", debug: true)
     refute result.key?("debug")
     refute execute(result["ticket"]).key?("debug")
     get "/"
-    assert_select 'lazzzy-widget[data-debug="false"]'
+    assert_select 'voice-control-widget[data-debug="false"]'
   end
 
   def test_debug_reports_matching_and_execution_without_secrets
@@ -26,7 +26,7 @@ class DebugTest < LazzzyTest
     assert_equal "execute", execution.dig("debug", "stage")
     assert_equal "navigate", execution.dig("debug", "outcome")
     get "/"
-    assert_select 'lazzzy-widget[data-debug="true"]'
+    assert_select 'voice-control-widget[data-debug="true"]'
   end
 
   def test_debug_explains_no_match_and_low_confidence
@@ -57,10 +57,10 @@ class DebugTest < LazzzyTest
   end
 
   def test_jev_answer_is_inspectable_only_in_debug_and_excludes_unexpected_fields
-    @config.interpreter = Lazzzy::Jev.new
+    @config.interpreter = VoiceControl::Jev.new
     @config.api_key = "private-api-key"
     answer = { choice: "home", confidence: 0.4, probabilities: { home: 0.4, none: 0.6, unknown: 0.9 }, extra: "private-provider-metadata" }
-    stub_request(:post, Lazzzy::Jev::ENDPOINT).to_return(status: 200, body: { answers: { action: answer }, request: "private-context" }.to_json)
+    stub_request(:post, VoiceControl::Jev::ENDPOINT).to_return(status: 200, body: { answers: { action: answer }, request: "private-context" }.to_json)
     result = submit(transcript: "take me home")
     refute result.key?("debug")
     @config.debug = true
@@ -74,7 +74,7 @@ class DebugTest < LazzzyTest
     assert details.fetch("candidate_details").first["description"].present?
     refute_match(/private-|unknown/, details.to_json)
     answer[:choice] = "none"
-    stub_request(:post, Lazzzy::Jev::ENDPOINT).to_return(status: 200, body: { answers: { action: answer } }.to_json)
+    stub_request(:post, VoiceControl::Jev::ENDPOINT).to_return(status: 200, body: { answers: { action: answer } }.to_json)
     result = submit(transcript: "something else")
     assert_response :unprocessable_content
     assert_equal "none", result.dig("debug", "jev_result", "choice")

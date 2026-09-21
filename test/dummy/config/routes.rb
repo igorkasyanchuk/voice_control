@@ -1,5 +1,5 @@
 Rails.application.routes.draw do
-  mount Lazzzy::Engine => "/lazzzy", as: :lazzzy
+  mount VoiceControl::Engine => "/voice_control", as: :voice_control
   root "demo#show"
   resources :users
   resource :settings, only: [:show, :update]

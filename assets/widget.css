@@ -325,3 +325,22 @@ header {
 .copy-status {
   font-size: 11px;
 }
+
+.notification {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  max-width: min(360px, calc(100vw - 48px));
+  padding: 12px 18px;
+  border: 1px solid #c6d8b0;
+  border-radius: 12px;
+  background: #edf6e3;
+  color: #33492b;
+  box-shadow: 0 6px 24px #14240026;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+:host([data-position="bottom_left"]) .notification {
+  left: 24px;
+  right: auto;
+}

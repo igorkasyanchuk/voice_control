@@ -1,4 +1,4 @@
-<% jev_enabled = Lazzzy.configuration.interpreter.is_a?(Lazzzy::Jev) %>
+<% jev_enabled = VoiceControl.configuration.interpreter.is_a?(VoiceControl::Jev) %>
 
 <div class="page">
   <div class="eyebrow">LESS CLICKING. MORE DOING.</div>
@@ -29,11 +29,11 @@
 
         <button
           type="button"
-          data-open-lazzzy
+          data-open-voice-control
           aria-haspopup="dialog"
-          aria-controls="try-lazzzy-dialog"
+          aria-controls="try-voice-control-dialog"
         >
-          Try lazzzy <span>↗</span>
+          Try voice_control <span>↗</span>
         </button>
 
         <small>
@@ -57,15 +57,15 @@
       </div>
     </section>
     <dialog
-      id="try-lazzzy-dialog"
+      id="try-voice-control-dialog"
       class="demo-dialog"
-      aria-labelledby="try-lazzzy-title"
+      aria-labelledby="try-voice_control-title"
     >
       <span class="pill">A LITTLE DEMO</span>
-      <h2 id="try-lazzzy-title">Hello from Fern &amp; Co.</h2>
+      <h2 id="try-voice_control-title">Hello from Fern &amp; Co.</h2>
 
       <p>
-        You opened this window with a button. Lazzzy can click the same button
+        You opened this window with a button. VoiceControl can click the same button
         when you ask.
       </p>
 
@@ -192,6 +192,6 @@
   </section>
 
   <footer class="page-footer">
-    <span>lazzzy — a little less clicking.</span><span>Demo users and settings are saved in a local database.</span>
+    <span>voice_control — a little less clicking.</span><span>Demo users and settings are saved in a local database.</span>
   </footer>
 </div>

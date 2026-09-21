@@ -1,25 +1,30 @@
 require "securerandom"
 
-module Lazzzy
+module VoiceControl
   class Conversation
     attr_reader :command_key, :diagnostics
 
     def initialize(controller)
       @controller = controller
-      @config = Lazzzy.configuration
+      @config = VoiceControl.configuration
       @diagnostics = {}
     end
 
-    def catalog
-      (@config.commands.values + (@browser_actions&.commands || [])).select { |command| command.visible?(@controller) }
+    def catalog(page_path: @page_path)
+      (@config.commands.values + (@browser_actions&.commands || [])).select { |command| command.visible?(@controller) && command.available_on?(page_path) }
     end
 
     def interpret(transcript:, client_context:, command_key: nil, continuation: nil, browser_page: nil)
       raise InvalidInput, "Use a command of 2,000 characters or fewer." unless transcript.is_a?(String) && transcript.length <= 2_000
       raise InvalidInput, "Context must be a small JSON object." unless client_context.is_a?(Hash) && JSON.generate(client_context).bytesize <= 4_096
+      @page_path = client_context["path"]
 
       if continuation.present?
         state = unpack(continuation, "continuation")
+        if state["page_path"] && @page_path && state["page_path"] != @page_path
+          raise InvalidInput, "The page changed. Please start the command again."
+        end
+        @page_path ||= state["page_path"]
         load_browser_actions(state["browser_page"])
         if state["candidates"]
           selected = command_key.presence || select_candidate(transcript, state["candidates"])
@@ -44,7 +49,7 @@ module Lazzzy
         raise InvalidInput, "Context must be a small JSON object." unless context.is_a?(Hash) && JSON.generate(context).bytesize <= 4_096
 
         state = { "id" => SecureRandom.uuid, "deadline" => 10.minutes.from_now.to_i,
-          "transcript" => transcript, "context" => context.deep_stringify_keys, "arguments" => {} }
+          "transcript" => transcript, "context" => context.deep_stringify_keys, "page_path" => @page_path, "arguments" => {} }
         if command_key.present?
           state["command"] = command_key
         else
@@ -92,6 +97,7 @@ module Lazzzy
 
     def execute(ticket)
       state = unpack(ticket, "execution")
+      @page_path = state["page_path"]
       load_browser_actions(state["browser_page"])
       command = fetch_command(state["command"])
       args = validate_arguments(command, state["arguments"])
@@ -99,14 +105,14 @@ module Lazzzy
 
       store = @config.execution_store.call
       if store.is_a?(ActiveSupport::Cache::NullStore)
-        raise Error, "Lazzzy needs an execution cache supporting atomic writes"
+        raise Error, "VoiceControl needs an execution cache supporting atomic writes"
       end
-      claimed = store.write("lazzzy/executions/#{state.fetch('id')}", true, unless_exist: true, expires_in: 11.minutes)
+      claimed = store.write("voice_control/executions/#{state.fetch('id')}", true, unless_exist: true, expires_in: 11.minutes)
       raise InvalidInput, "This command was already submitted. Check its result before issuing another command." unless claimed
 
       result = @controller.instance_exec(args, state["context"], &command.executor)
-      unless result.is_a?(Hash) && %w[message navigate event browser].include?(result[:kind])
-        raise Error, "Commands must return a Lazzzy::Result"
+      unless result.is_a?(Hash) && %w[message reload navigate event browser].include?(result[:kind])
+        raise Error, "Commands must return a VoiceControl::Result"
       end
       Result.navigate(result.fetch(:url)) if result[:kind] == "navigate"
       result
@@ -182,13 +188,13 @@ module Lazzzy
     end
 
     def verifier
-      Rails.application.message_verifier("lazzzy")
+      Rails.application.message_verifier("voice_control")
     end
 
     def purpose(kind)
-      @controller.session[:lazzzy_nonce] ||= SecureRandom.hex(24)
+      @controller.session[:voice_control_nonce] ||= SecureRandom.hex(24)
       identity = @controller.instance_exec(&@config.identity)
-      "lazzzy/#{kind}/#{@controller.session[:lazzzy_nonce]}/#{identity}"
+      "voice_control/#{kind}/#{@controller.session[:voice_control_nonce]}/#{identity}"
     end
 
     def pack(state, kind)

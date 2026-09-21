@@ -1,6 +1,6 @@
 require "bigdecimal"
 
-module Lazzzy
+module VoiceControl
   class Argument
     TYPES = [:string, :integer, :decimal, :boolean, :enum].freeze
     attr_reader :name, :type, :prompt

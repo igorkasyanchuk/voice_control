@@ -22,10 +22,11 @@ Explore the demo pages, Ruby commands, and automatically discovered page control
 | `show announcement` | A string follow-up |
 | `set discount` | Decimal validation |
 | `change notifications` | A boolean follow-up |
-| `click the Try lazzzy button` | Discover and click the button on Overview to open a demo modal |
+| `click the Try voice_control button` | Discover and click the button on Overview to open a demo modal |
 | `fill workspace name` | Fill a field on Settings after a follow-up |
 | `fill token balance with 500` | Fill the numeric field on a user edit page; then `click Save user` to persist it |
 | `click Save settings` | Save the Settings form to SQLite |
+| `summarize workspace` | Settings-only Ruby command; shows workspace details and a completion notice without reloading |
 
 The dummy app automatically uses **Jev** when `JEV_API_KEY` or `TYPESAFE_API_KEY` is set in the server environment (`JEV_API_KEY` takes precedence). Start it with your key:
 

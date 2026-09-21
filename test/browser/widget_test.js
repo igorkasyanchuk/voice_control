@@ -11,7 +11,7 @@
     widget?.remove();
     await wait();
     fixture.innerHTML = html;
-    widget = document.createElement("lazzzy-widget");
+    widget = document.createElement("voice-control-widget");
     widget.dataset.endpoint = "../../assets";
     widget.dataset.browserActions = "true";
     widget.dataset.shortcut = "ctrl+alt+l";
@@ -180,7 +180,7 @@
       <a href="/">Home <span hidden>Hidden detail</span></a>
       <label for="display-name">Display name</label><input id="display-name">
       <button title="Settings">⚙</button>
-      <button data-lazzzy-label="Menu">☰</button>
+      <button data-voice-control-label="Menu">☰</button>
     `);
     const labels = widget
       .discoverBrowserControls()
@@ -211,28 +211,28 @@
     widget.dataset.debug = "true";
     widget.showDebug({
       command_labels: {
-        lazzzy_browser_click_e1: "Click Home",
-        lazzzy_browser_click_e2: "Click Home",
+        voice_control_browser_click_e1: "Click Home",
+        voice_control_browser_click_e2: "Click Home",
       },
       jev_result: {
         probabilities: {
-          lazzzy_browser_click_e1: 0.8,
-          lazzzy_browser_click_e2: 0.2,
+          voice_control_browser_click_e1: 0.8,
+          voice_control_browser_click_e2: 0.2,
           none: 0,
         },
       },
     });
     const report = widget.shadowRoot.querySelector(".debug pre").textContent;
     assert(
-      report.includes('"Click Home [lazzzy_browser_click_e1]": 0.8'),
+      report.includes('"Click Home [voice_control_browser_click_e1]": 0.8'),
       "First action has no readable description",
     );
     assert(
-      report.includes('"Click Home [lazzzy_browser_click_e2]": 0.2'),
+      report.includes('"Click Home [voice_control_browser_click_e2]": 0.2'),
       "Duplicate label lost its probability",
     );
     assert(
-      widget.debugDetails.jev_result.probabilities.lazzzy_browser_click_e1 ===
+      widget.debugDetails.jev_result.probabilities.voice_control_browser_click_e1 ===
         0.8,
       "Raw provider result was changed",
     );
@@ -267,6 +267,109 @@
       widget.panel.getBoundingClientRect().width === panelWidth,
       "Panel width changed",
     );
+  });
+  test("Equivalent links ignore label case and retain stale-node checks", async () => {
+    await setup(
+      '<a href="/characters/new">Create Character</a><a href="/characters/new">create character</a><a href="/characters/new">CREATE CHARACTER</a>',
+    );
+    const links = fixture.querySelectorAll("a");
+    const clicked = [];
+    links.forEach((link, index) =>
+      link.addEventListener("click", (event) => {
+        event.preventDefault();
+        clicked.push(index);
+      }),
+    );
+    widget.browserSnapshot = widget.discoverBrowserControls();
+    assert(
+      widget.browserSnapshot.page.elements.length === 1,
+      "Duplicate links reached the command catalog",
+    );
+    const action = {
+      action: "click",
+      target: widget.browserSnapshot.page.elements[0].ref,
+      page_id: widget.browserSnapshot.page.page_id,
+    };
+    widget.runBrowserAction(action);
+    assert(
+      clicked.join() === "0",
+      "Click did not use exactly one representative",
+    );
+    links[0].remove();
+    let rejected = false;
+    try {
+      widget.runBrowserAction(action);
+    } catch {
+      rejected = true;
+    }
+    assert(
+      rejected && clicked.length === 1,
+      "Removed representative silently switched targets",
+    );
+    widget.browserSnapshot = widget.discoverBrowserControls();
+    assert(
+      widget.browserSnapshot.page.elements.length === 1,
+      "Rediscovery kept duplicate links",
+    );
+    widget.runBrowserAction({
+      action: "click",
+      target: widget.browserSnapshot.page.elements[0].ref,
+      page_id: widget.browserSnapshot.page.page_id,
+    });
+    assert(
+      clicked.join() === "0,1",
+      "Rediscovery did not select the remaining link",
+    );
+  });
+  test("Distinct link destinations and behaviors remain separate", async () => {
+    await setup(`
+      <a href="/users">Open</a><a href="/users?active=true">Open</a><a href="/users#active">Open</a>
+      <a href="/users" target="_blank">Open</a><a href="/users" download>Open</a>
+      <a href="/users" data-turbo-method="delete">Open</a><a href="/users" data-turbo-frame="preview">Open</a>
+      <button>Open</button><button>Open</button><a href="#">Open</a><a href="#">Open</a>
+      <a href="/users" role="button">Open</a><a href="/users" role="button">Open</a>
+    `);
+    assert(
+      widget.discoverBrowserControls().page.elements.length === 13,
+      "Distinct actions were merged",
+    );
+  });
+  test("Duplicate links do not consume the discovery limit", async () => {
+    await setup(
+      `${'<a href="/users">Users</a>'.repeat(201)}<a href="/reports">Reports</a>`,
+    );
+    const elements = widget.discoverBrowserControls().page.elements;
+    assert(elements.length === 2, "Duplicate links consumed the catalog limit");
+  });
+  test("Successful reload results refresh the current document", async () => {
+    await setup();
+    const frame = document.createElement("iframe");
+    frame.src = "reload.html?plan=premium#account";
+    try {
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(
+          () => reject(new Error("Page did not reload")),
+          3000,
+        );
+        frame.addEventListener("load", () => {
+          if (frame.contentDocument.body.dataset.reloaded === "true") {
+            clearTimeout(timeout);
+            resolve();
+          }
+        });
+        fixture.append(frame);
+      });
+      assert(
+        frame.contentWindow.location.search === "?plan=premium",
+        "Reload lost the query",
+      );
+      assert(
+        frame.contentWindow.location.hash === "#account",
+        "Reload lost the fragment",
+      );
+    } finally {
+      frame.remove();
+    }
   });
   let failures = 0;
   for (const { name, run } of tests) {

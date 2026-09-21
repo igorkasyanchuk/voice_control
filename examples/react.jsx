@@ -1,23 +1,24 @@
 import { useEffect } from "react";
 
-// Load /lazzzy/widget.js and Rails CSRF meta tags in your HTML shell first.
-export function LazzzyCommands({ navigate, userId }) {
+// Load /voice_control/widget.js and Rails CSRF meta tags in your HTML shell first.
+export function VoiceControlCommands({ navigate, userId, pathname }) {
   useEffect(() => {
     let mounted = true;
-    customElements.whenDefined("lazzzy-widget").then(() => {
+    customElements.whenDefined("voice-control-widget").then(() => {
       if (!mounted) return;
-      window.Lazzzy.configure({ navigate });
-      window.Lazzzy.setContext(() => ({ area: "admin", user_id: userId }));
+      window.VoiceControl.configure({ navigate });
+      window.VoiceControl.setContext(() => ({ area: "admin", user_id: userId }));
+      window.VoiceControl.refresh();
     });
     return () => {
       mounted = false;
     };
-  }, [navigate, userId]);
+  }, [navigate, userId, pathname]);
 
   return (
-    <lazzzy-widget
-      id="lazzzy-widget"
-      data-endpoint="/lazzzy"
+    <voice-control-widget
+      id="voice-control-widget"
+      data-endpoint="/voice_control"
       data-shortcut="mod+shift+u"
       data-idle-timeout="120000"
       data-browser-actions="true"

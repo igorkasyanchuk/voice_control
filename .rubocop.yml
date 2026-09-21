@@ -6,5 +6,7 @@ AllCops:
   SuggestExtensions: false
   Exclude:
     - tmp/**/*
+    - node_modules/**/*
+    - coverage/**/*
 Style/FrozenStringLiteralComment:
   Enabled: false
