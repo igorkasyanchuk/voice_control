@@ -2,7 +2,7 @@
 
 ## 0.1.0 (unreleased)
 
-- Support Ruby 3.2+ and test Ruby 3.2, 3.3, 3.4, and 4.0 in CI.
+- Allow installation on Ruby 3.2+; CI runs on Ruby 4.0.
 - Stay within Jev's 255-choice limit: skip the longest commands beyond 254 and log a warning instead of failing the request.
 - Add `speech_language` to configure the browser speech recognition language.
 - Rename the gem and repository to `voice_control`, with `VoiceControl` Ruby/JavaScript APIs, `voice_control:install`, and the `voice-control-widget` component.
