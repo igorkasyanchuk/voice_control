@@ -84,6 +84,15 @@ describe("widget lifecycle and keyboard controls", () => {
 });
 
 describe("speech capture", () => {
+  it("uses the configured speech language", () => {
+    speech();
+    const w = widget("", { speechLanguage: "uk-UA" });
+    w.shadowRoot.querySelector(".mic").click();
+    expect(w.recognition.lang).toBe("uk-UA");
+    w.recognition.onerror({ error: "language-not-supported" });
+    expect(w.status.textContent).toContain("configured speech language");
+  });
+
   it("waits for complete speech and restarts after a recognition end", async () => {
     speech();
     const w = widget();

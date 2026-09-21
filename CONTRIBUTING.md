@@ -1,6 +1,6 @@
 # Contributing
 
-Use Ruby 4.0+ and Rails 8.x. From this gem's directory:
+Use Ruby 3.2+ and Rails 8.x. From this gem's directory:
 
 ```sh
 bundle install

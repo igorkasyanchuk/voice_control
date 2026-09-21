@@ -9,7 +9,7 @@ module VoiceControl
         tag.public_send("voice-control-widget", id: "voice-control-widget", data: {
           turbo_permanent: true, endpoint: mount, shortcut: VoiceControl.configuration.keyboard_shortcut,
           idle_timeout: VoiceControl.configuration.idle_timeout, version: version, browser_actions: VoiceControl.configuration.browser_actions,
-          request_timeout: VoiceControl.configuration.request_timeout,
+          request_timeout: VoiceControl.configuration.request_timeout, speech_language: VoiceControl.configuration.speech_language,
           debug: VoiceControl.configuration.debug == true, launcher_size: VoiceControl.configuration.launcher_size,
           position: VoiceControl.configuration.widget_position, push_to_talk_shortcut: VoiceControl.configuration.push_to_talk_shortcut,
         }),

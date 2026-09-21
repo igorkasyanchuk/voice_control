@@ -4,6 +4,7 @@ require "json"
 module VoiceControl
   class Jev
     ENDPOINT = URI("https://api.typesafe.ai/v1/systemone")
+    MAX_COMMANDS = 254 # Jev accepts at most 255 choices; one is reserved for "none".
 
     def call(transcript:, context:, commands:)
       config = VoiceControl.configuration
@@ -11,6 +12,12 @@ module VoiceControl
       raise ProviderError, "Jev API key is missing" if key.to_s.empty?
 
       criteria = commands.to_h { |command| [command.key, "#{command.group}: #{command.description}. Aliases: #{command.aliases.join(', ')}. Examples: #{command.examples.join('; ')}"] }
+      dropped = []
+      if criteria.size > MAX_COMMANDS
+        dropped = criteria.max_by(criteria.size - MAX_COMMANDS) { |_key, text| text.length }.map(&:first)
+        criteria = criteria.except(*dropped)
+        Rails.logger.warn("VoiceControl: #{commands.length} commands exceed Jev's #{MAX_COMMANDS + 1}-choice limit; skipped the #{dropped.length} longest, starting with: #{dropped.first(10).join(', ')}")
+      end
       request = Net::HTTP::Post.new(ENDPOINT)
       request["Authorization"] = "Bearer #{key}"
       request["Content-Type"] = "application/json"
@@ -43,6 +50,7 @@ module VoiceControl
           choice: (choice if criteria.key?(choice) || choice == "none"), confidence: confidence,
           probabilities: probabilities.select { |id, probability| (criteria.key?(id) || id == "none") && probability.is_a?(Numeric) && probability.between?(0, 1) },
         }
+        result[:jev_result][:skipped_commands] = dropped.length if dropped.any?
       end
       result
     rescue JSON::ParserError, KeyError, TypeError, IOError, SystemCallError, SocketError, Timeout::Error => e

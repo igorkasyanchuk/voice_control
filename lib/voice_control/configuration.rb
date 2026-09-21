@@ -3,7 +3,7 @@ module VoiceControl
     attr_accessor :api_key, :model, :parent_controller, :authorize, :context,
       :on_error, :interpreter, :keyboard_shortcut, :idle_timeout, :confidence_threshold,
       :execution_store, :identity, :browser_actions, :debug, :push_to_talk_shortcut
-    attr_reader :commands, :widget_position, :launcher_size, :request_timeout
+    attr_reader :commands, :widget_position, :launcher_size, :request_timeout, :speech_language
 
     def initialize
       @model = "jev-latest"
@@ -24,6 +24,13 @@ module VoiceControl
       @widget_position = :bottom_right
       @launcher_size = :normal
       @push_to_talk_shortcut = "mod+shift+space"
+      @speech_language = "en-US"
+    end
+
+    def speech_language=(value)
+      raise ArgumentError, "Speech language must be a BCP 47 tag such as en-US or uk-UA" unless value.is_a?(String) && value.match?(/\A[a-z]{2,3}(?:-[a-z0-9]{1,8})*\z/i)
+
+      @speech_language = value
     end
 
     def widget_position=(value)

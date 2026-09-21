@@ -17,6 +17,7 @@ class GeneratorTest < Rails::Generators::TestCase
     assert_file "config/initializers/voice_control.rb", /config.authorize = -> \{ false \}/
     assert_file "config/initializers/voice_control.rb", /JEV_API_KEY/
     assert_file "config/initializers/voice_control.rb", /config.launcher_size = :normal/
+    assert_file "config/initializers/voice_control.rb", /config.speech_language = "en-US"/
     assert_file "config/routes.rb", /mount VoiceControl::Engine/
   end
 end

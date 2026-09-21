@@ -20,6 +20,7 @@ Set options in `config/initializers/voice_control.rb` inside `VoiceControl.confi
 | `interpreter` | Jev | Custom callable with `transcript:`, `context:`, `commands:`. See below. |
 | `keyboard_shortcut` | `"mod+shift+u"` | Open/close; `nil` disables it. `mod` is Cmd on macOS, Ctrl elsewhere. |
 | `push_to_talk_shortcut` | `"mod+shift+space"` | Hold/release speech; `nil` disables it. |
+| `speech_language` | `"en-US"` | Browser speech recognition language as a BCP 47 tag, e.g. `"uk-UA"`. Widget text and built-in page-action phrases stay English; give commands aliases in your language. |
 | `idle_timeout` | `120_000` | Milliseconds before the open widget closes for inactivity; use a positive number. |
 | `request_timeout` | `30_000` | Browser request deadline in milliseconds, including response parsing; integer from 1,000 to 300,000. No automatic retries. |
 | `widget_position` | `:bottom_right` | `:bottom_right` or `:bottom_left`. |

@@ -91,6 +91,7 @@ Closing or canceling during interpretation prevents a later response from trigge
 | HTTP 403 | Overall access, command visibility, record policy, and changed user identity. |
 | Commands refuse to execute with caching disabled | Development uses a local fallback; elsewhere configure a shared atomic execution store. |
 | Too many page controls | Dynamic discovery has a 200-control bound. Exclude irrelevant sections with `data-voice-control-ignore`, or use the page-wide `voice-control-browser-actions` meta tag. |
+| Free-form phrases miss commands on a large page | Jev matches at most 254 commands per request; the longest are skipped and listed in a `VoiceControl:` log warning. Scope commands with `pages:` or exclude page sections. |
 | A scoped command is missing | Check `pages:` against `location.pathname`, including case/trailing slash. Scope uses the original client path even when `config.context` filters URL data. |
 | This command is too large | Shorten the transcript/context or narrow the discovered controls. Signed state is capped at 32KB. |
 | Control/form changed | Restart the command after navigation, DOM replacement, relabeling, or form destination changes. |

@@ -1,6 +1,8 @@
 # voice_control
 
-Youtube demo: https://youtu.be/Zz1Ibx8R7WI
+[![Watch the voice_control demo on YouTube](docs/demo.png)](https://youtu.be/Zz1Ibx8R7WI)
+
+[▶ Watch the demo on YouTube](https://youtu.be/Zz1Ibx8R7WI)
 
 **You say it. Your app does it.**
 
@@ -23,7 +25,7 @@ Say **“show people.”** Your app opens its users page.
 | Existing buttons and forms | Optional page discovery: click, fill, select, check, and submit |
 | Your Rails app | A Shadow DOM widget, searchable help, Turbo support, and JavaScript hooks |
 
-**No runtime database, migrations, Node build, or CSS framework.** Rails 8.x, Ruby 4.0+, MIT. A short-lived execution cache is required; production uses a shared atomic cache.
+**No runtime database, migrations, Node build, or CSS framework.** Rails 8.x, Ruby 3.2+, MIT. A short-lived execution cache is required; production uses a shared atomic cache.
 
 The gem requires JSON 2.x because the supported Rails 8.0/8.1 versions use JSON APIs changed in JSON 3. Bundler applies this constraint automatically.
 
@@ -241,6 +243,8 @@ Disable automatic browser actions on a page, or exclude just part of its DOM:
 
 These exclusions apply to discovery, help, and pending dynamic actions. [Exclusions and limits →](docs/browser-actions.md#exclude-pages-or-controls)
 
+**Command limit.** Jev accepts at most 255 choices per request, so at most 254 commands (your vocabulary plus discovered page actions) are matched at once. Beyond that, the commands with the longest descriptions/aliases are skipped for that request and a warning listing them is written to the Rails log (debug mode also shows `skipped_commands`). Skipped commands still work through help and exact click labels. Keep large pages under the limit with `pages:` scopes and `data-voice-control-ignore`.
+
 ## Know what is sent and what can run
 
 Jev receives the transcript, configured page context (current URL/path by default), and available command descriptions. Dynamic discovery also sends control labels, IDs/names, types, and dropdown labels. Existing field values, Ruby code, and page HTML are not sent; anything the user types or speaks as a command is part of the transcript. Speech recognition may use the browser vendor's service.
@@ -282,6 +286,9 @@ VoiceControl.configure do |config|
 
   # Hold to speak, release to submit; nil disables this shortcut.
   config.push_to_talk_shortcut = "mod+shift+space"
+
+  # Speech recognition language (BCP 47 tag, e.g. "uk-UA"); widget text and built-in page phrases stay English.
+  config.speech_language = "en-US"
 
   # Widget corner: :bottom_right or :bottom_left.
   config.widget_position = :bottom_right
@@ -329,7 +336,7 @@ For a manually mounted web component, use `data-launcher-size="small"` for the c
 
 **Debug a command:** set `config.debug = true`, restart Rails, and expand **Command details**. Inspect the matching source, chosen action, confidence, candidates, and Jev's choice/probabilities. Copy details for a reproducible report. Debug is off by default.
 
-Voice uses browser Speech Recognition with English (`en-US`). Typing is the fallback when voice is unavailable. See [browser support and microphone requirements](docs/integration.md#browser-support).
+Voice uses browser Speech Recognition in `config.speech_language` (default `en-US`); widget text and built-in page phrases are English. Typing is the fallback when voice is unavailable. See [browser support and microphone requirements](docs/integration.md#browser-support).
 
 ## License
 

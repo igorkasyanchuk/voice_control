@@ -8,6 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        ruby: ['3.2', '3.3', '3.4', '4.0']
         rails: ['~> 8.0.0', '~> 8.1.0']
     env:
       RAILS_VERSION: ${{ matrix.rails }}
@@ -15,9 +16,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '4.0'
+          ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
-          cache-version: ${{ matrix.rails }}
+          cache-version: ${{ matrix.ruby }}-${{ matrix.rails }}
       - run: bundle exec rake test
       - run: bundle exec rubocop
       - run: gem build voice_control.gemspec

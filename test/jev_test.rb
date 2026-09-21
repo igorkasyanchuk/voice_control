@@ -26,6 +26,33 @@ class JevTest < VoiceControlTest
     assert_raises(VoiceControl::ProviderError) { call_jev }
   end
 
+  def test_longest_commands_are_skipped_beyond_the_jev_choice_limit
+    original_logger = Rails.logger
+    @config.api_key = "test-key"
+    @config.debug = true
+    extra = (1..260).map do |index|
+      VoiceControl::Command.new("extra_#{index}", description: "Extra #{'x' * index}", group: "Extra") { execute { |_args, _context| nil } }
+    end
+    sent = nil
+    stub_request(:post, VoiceControl::Jev::ENDPOINT).with(body: lambda { |body|
+      sent = JSON.parse(body).dig("questions", "action", "criteria").keys
+    }).to_return(status: 200, body: { answers: { action: { choice: "extra_260", confidence: 0.9, probabilities: { extra_260: 0.9, home: 0.1 } } } }.to_json)
+    log = StringIO.new
+    Rails.logger = Logger.new(log)
+    result = VoiceControl::Jev.new.call(transcript: "home", context: {}, commands: @config.commands.values + extra)
+    assert_equal 255, sent.length
+    assert_includes sent, "none"
+    assert_includes sent, "home"
+    assert_includes sent, "extra_252"
+    refute_includes sent, "extra_253"
+    assert_nil result[:command]
+    assert_equal ["home"], result[:candidates]
+    assert_equal 8, result.dig(:jev_result, :skipped_commands)
+    assert_match(/skipped the 8 longest, starting with: extra_260/, log.string)
+  ensure
+    Rails.logger = original_logger
+  end
+
   def test_page_url_reaches_jev_through_the_backend
     @config.api_key = "test-key"
     @config.interpreter = VoiceControl::Jev.new

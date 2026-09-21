@@ -13,5 +13,6 @@
 /RELEASE_REVIEW.md
 /coverage/
 /node_modules/
+/.claude/
 /playwright-report/
 /test-results/

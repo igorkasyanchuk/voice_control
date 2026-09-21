@@ -30,6 +30,9 @@ VoiceControl.configure do |config|
   # Hold to speak, release to submit. Set nil to disable this shortcut.
   config.push_to_talk_shortcut = "mod+shift+space"
 
+  # Speech recognition language as a BCP 47 tag, e.g. "uk-UA". Widget text and built-in page phrases stay English.
+  config.speech_language = "en-US"
+
   # Corner for the launcher and panel: :bottom_right or :bottom_left.
   config.widget_position = :bottom_right
 

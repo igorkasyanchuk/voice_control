@@ -356,7 +356,7 @@
       if (this.listening || this.panel.hidden) return;
       this.listening = true;
       this.recognition = new Recognition();
-      this.recognition.lang = "en-US";
+      this.recognition.lang = this.dataset.speechLanguage || "en-US";
       this.recognition.continuous = true;
       this.recognition.interimResults = true;
       const recognition = this.recognition;
@@ -397,7 +397,9 @@
         if (event.error !== "no-speech" && event.error !== "aborted") {
           this.stopMicrophone();
           this.status.textContent =
-            "Microphone unavailable. You can still type commands.";
+            event.error === "language-not-supported"
+              ? "This browser cannot recognize the configured speech language. You can still type commands."
+              : "Microphone unavailable. You can still type commands.";
         }
       };
       this.recognition.onend = () => {

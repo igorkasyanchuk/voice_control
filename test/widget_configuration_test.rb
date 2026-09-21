@@ -12,6 +12,19 @@ class WidgetConfigurationTest < VoiceControlTest
     end
   end
 
+  def test_speech_language_is_validated_and_rendered
+    get "/"
+    assert_select 'voice-control-widget[data-speech-language="en-US"]'
+    @config.speech_language = "de-DE-u-co-phonebk"
+    @config.speech_language = "uk-UA"
+    get "/"
+    assert_select 'voice-control-widget[data-speech-language="uk-UA"]'
+    [nil, :en, "", "english", "en_US", "en-US\" onload=\"x"].each do |language|
+      assert_raises(ArgumentError) { @config.speech_language = language }
+    end
+    assert_equal "uk-UA", @config.speech_language
+  end
+
   def test_launcher_sizes_are_validated_and_rendered
     get "/"
     assert_select 'voice-control-widget[data-launcher-size="normal"]'

@@ -49,7 +49,7 @@ Avoid replacing the widget during route changes. Removing it stops recognition a
 
 ## Listening and keyboard controls
 
-The floating button or keyboard shortcut opens the widget and starts browser speech recognition. English (`en-US`) only for now. Typing remains available when recognition is unsupported or denied. Closing the widget stops listening; two minutes of inactivity closes it automatically. No conversation history is displayed or persisted by the gem.
+The floating button or keyboard shortcut opens the widget and starts browser speech recognition. Recognition uses `config.speech_language` (default `en-US`); widget text, built-in page phrases, and spoken follow-ups such as “two” or “yes” remain English. Typing remains available when recognition is unsupported or denied. Closing the widget stops listening; two minutes of inactivity closes it automatically. No conversation history is displayed or persisted by the gem.
 
 ```ruby
 config.keyboard_shortcut = "mod+shift+u" # ⌘ on macOS, Ctrl elsewhere

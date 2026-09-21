@@ -2,6 +2,9 @@
 
 ## 0.1.0 (unreleased)
 
+- Support Ruby 3.2+ and test Ruby 3.2, 3.3, 3.4, and 4.0 in CI.
+- Stay within Jev's 255-choice limit: skip the longest commands beyond 254 and log a warning instead of failing the request.
+- Add `speech_language` to configure the browser speech recognition language.
 - Rename the gem and repository to `voice_control`, with `VoiceControl` Ruby/JavaScript APIs, `voice_control:install`, and the `voice-control-widget` component.
 - Add `pages:` command scopes for exact paths and regexes, with navigation-aware help and a custom-router `VoiceControl.refresh()` hook.
 - Add a page-wide dynamic-action opt-out meta tag; enforce ignored forms for externally associated controls.
